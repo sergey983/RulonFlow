@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="RulonFlow.Api/RulonFlow.Api.csproj" />
+  <Project Path="RulonFlow.Application/RulonFlow.Application.csproj" />
+  <Project Path="RulonFlow.Domain/RulonFlow.Domain.csproj" />
+  <Project Path="RulonFlow.Infrastructure/RulonFlow.Infrastructure.csproj" />
+</Solution>

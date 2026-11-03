@@ -1,0 +1,74 @@
+.app {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+    font-family: system-ui, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+}
+
+.sidebar {
+    width: 240px;
+    background: var(--sidebar);
+    color: var(--sidebar-text);
+    padding: 16px 12px;
+    flex-shrink: 0;
+}
+
+.brand {
+    font-size: 20px;
+    font-weight: 700;
+    padding: 8px 12px 24px;
+}
+
+.menu {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.menu-link {
+    display: block;
+    padding: 10px 12px;
+    border-radius: 8px;
+    color: #d1d5db;
+    text-decoration: none;
+}
+
+.menu-link:hover {
+    background: #1f2937;
+    color: #fff;
+}
+
+.menu-link.active {
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+}
+
+.content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+}
+
+.topbar {
+    height: 56px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+}
+
+.user {
+    font-weight: 600;
+}
+
+.page {
+    padding: 24px;
+    flex: 1;
+}

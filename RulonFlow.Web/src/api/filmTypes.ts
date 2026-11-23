@@ -3,7 +3,6 @@ import { api } from './client';
 export interface FilmType {
     uuid: string;
     brand: string;
-    displayName: string;
     densityGcm3: number | null;
     description: string | null;
     isActive: boolean;
@@ -11,7 +10,6 @@ export interface FilmType {
 
 export interface FilmTypeFormValues {
     brand: string;
-    displayName: string;
     densityGcm3: number | null;
     description: string | null;
     isActive: boolean;

@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using RulonFlow.Domain.Entities;
+using System.Security.Cryptography.X509Certificates;
 
 namespace RulonFlow.Infrastructure.Persistence;
 
@@ -17,6 +18,14 @@ public class RulonFlowDbContext : DbContext
     public DbSet<Supplier> Suppliers => Set<Supplier>();
     public DbSet<Counterparty> Counterparties => Set<Counterparty>();
     public DbSet<DefectReason> DefectReasons => Set<DefectReason>();
+    public DbSet<Roll> Rolls => Set<Roll>();
+    public DbSet<Pallet> Pallets => Set<Pallet>();
+    public DbSet<PalletType> PalletTypes => Set<PalletType>();
+    public DbSet<StorageZone> StorageZones => Set<StorageZone>();
+    public DbSet<StorageLocation> StorageLocations => Set<StorageLocation>();
+    public DbSet<ImportFile> ImportFiles => Set<ImportFile>();
+    public DbSet<ImportRow> ImportRows => Set<ImportRow>();
+    public DbSet<MaterialReceipt> MaterialReceipts => Set<MaterialReceipt>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -31,11 +40,6 @@ public class RulonFlowDbContext : DbContext
 
             entity.Property(x => x.Brand)
                 .HasColumnName("brand")
-                .HasMaxLength(100)
-                .IsRequired();
-
-            entity.Property(x => x.DisplayName)
-                .HasColumnName("display_name")
                 .HasMaxLength(100)
                 .IsRequired();
 
@@ -212,6 +216,315 @@ public class RulonFlowDbContext : DbContext
             entity.Property(x => x.UpdatedAt).HasColumnName("updated_at");
 
             entity.HasIndex(x => x.Name).IsUnique();
+        });
+
+        modelBuilder.Entity<PalletType>(entity =>
+        {
+            entity.ToTable("pallet_types");
+            entity.HasKey(x => x.Uuid);
+
+            entity.Property(x => x.Uuid)
+                .HasColumnName("uuid")
+                .HasMaxLength(36);
+
+            entity.Property(x => x.Name)
+                .HasColumnName("name")
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(x => x.LengthMm)
+                .HasColumnName("length_mm");
+
+            entity.Property(x => x.WidthMm)
+                .HasColumnName("width_mm");
+
+            entity.Property(x => x.Description)
+                .HasColumnName("description")
+                .HasMaxLength(255);
+
+            entity.Property(x => x.SortOrder)
+                .HasColumnName("sort_order");
+
+            entity.HasIndex(x => x.Name)
+                .IsUnique();
+        });
+
+        modelBuilder.Entity<Roll>(entity =>
+        {
+            entity.ToTable("source_rolls");
+            entity.HasKey(x => x.Uuid);
+
+            entity.Property(x => x.Uuid)
+                .HasColumnName("uuid")
+                .HasMaxLength(36);
+
+            entity.Property(x => x.RollNumber)
+                .HasColumnName("roll_number")
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(x => x.ReceiptUuid)
+                .HasColumnName("receipt_uuid")
+                .HasMaxLength(36);
+
+            entity.Property(x => x.FilmTypeUuid)
+                .HasColumnName("film_type_uuid")
+                .HasMaxLength(36);
+
+            entity.Property(x => x.ThicknessMicron)
+                .HasColumnName("thickness_micron");
+
+            entity.Property(x => x.WidthMm)
+                .HasColumnName("width_mm");
+
+            entity.Property(x => x.LengthM)
+                .HasColumnName("length_m");
+
+            entity.Property(x => x.GrossWeightKg)
+                .HasColumnName("gross_weight_kg")
+                .HasPrecision(12, 2);
+
+            entity.Property(x => x.NetWeightKg)
+                .HasColumnName("net_weight_kg")
+                .HasPrecision(12, 2);
+
+            entity.Property(x => x.BatchNumber)
+                .HasColumnName("batch_number")
+                .HasMaxLength(100);
+
+            entity.Property(x => x.Status)
+                .HasColumnName("status")
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(x => x.PalletUuid)
+                .HasColumnName("pallet_uuid")
+                .HasMaxLength(36);
+
+            entity.Property(x => x.Comment)
+                .HasColumnName("comment")
+                .HasMaxLength(1000);
+
+            entity.Property(x => x.CreatedByUuid)
+                .HasColumnName("created_by_uuid")
+                .HasMaxLength(36);
+
+            entity.Property(x => x.CreatedAt)
+                .HasColumnName("created_at");
+
+            entity.HasIndex(x => x.RollNumber)
+                .IsUnique();
+
+            entity.HasOne(x => x.FilmType)
+                .WithMany()
+                .HasForeignKey(x => x.FilmTypeUuid);
+
+            entity.HasOne(x => x.Pallet)
+                .WithMany()
+                .HasForeignKey(x => x.PalletUuid);
+        });
+
+        modelBuilder.Entity<Pallet>(entity =>
+        {
+            entity.ToTable("pallets");
+            entity.HasKey(x => x.Uuid);
+
+            entity.Property(x => x.Uuid).HasColumnName("uuid").HasMaxLength(36);
+            entity.Property(x => x.PalletNumber).HasColumnName("pallet_number").HasMaxLength(50).IsRequired();
+            entity.Property(x => x.PalletTypeUuid).HasColumnName("pallet_type_uuid").HasMaxLength(36);
+            entity.Property(x => x.CurrentLocationUuid).HasColumnName("current_location_uuid").HasMaxLength(36);
+            entity.Property(x => x.Status).HasColumnName("status").HasMaxLength(30).IsRequired();
+            entity.Property(x => x.CreatedByUuid).HasColumnName("created_by_uuid").HasMaxLength(36);
+            entity.Property(x => x.CreatedAt).HasColumnName("created_at");
+            entity.Property(x => x.ClosedAt).HasColumnName("closed_at");
+            entity.HasIndex(x => x.PalletNumber).IsUnique();
+
+            entity.HasOne(x => x.PalletType)
+                .WithMany(x => x.Pallets)
+                .HasForeignKey(x => x.PalletTypeUuid);
+
+            entity.HasOne(x => x.CurrentLocation)
+                .WithMany(x => x.Pallets)
+                .HasForeignKey(x => x.CurrentLocationUuid);
+        });
+
+        modelBuilder.Entity<StorageZone>(entity =>
+        {
+            entity.ToTable("storage_zones");
+            entity.HasKey(x => x.Uuid);
+
+            entity.Property(x => x.Uuid)
+                .HasColumnName("uuid")
+                .HasMaxLength(36);
+
+            entity.Property(x => x.Name)
+                .HasColumnName("name")
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(x => x.Description)
+                .HasColumnName("description")
+                .HasMaxLength(255);
+
+            entity.Property(x => x.IsActive)
+                .HasColumnName("is_active");
+
+            entity.Property(x => x.CreatedAt)
+                .HasColumnName("created_at");
+
+            entity.Property(x => x.UpdatedAt)
+                .HasColumnName("updated_at");
+
+            entity.HasIndex(x => x.Name)
+                .IsUnique();
+
+            entity.HasMany(x => x.Locations)
+                .WithOne(x => x.Zone)
+                .HasForeignKey(x => x.ZoneUuid);
+        });
+
+        modelBuilder.Entity<StorageLocation>(entity =>
+        {
+            entity.ToTable("storage_locations");
+            entity.HasKey(x => x.Uuid);
+
+            entity.Property(x => x.Uuid)
+                .HasColumnName("uuid")
+                .HasMaxLength(36);
+
+            entity.Property(x => x.ZoneUuid)
+                .HasColumnName("zone_uuid")
+                .HasMaxLength(36);
+
+            entity.Property(x => x.Name)
+                .HasColumnName("name")
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(x => x.Description)
+                .HasColumnName("description")
+                .HasMaxLength(255);
+
+            entity.Property(x => x.IsActive)
+                .HasColumnName("is_active");
+
+            entity.Property(x => x.IsBlocked)
+                .HasColumnName("is_blocked");
+
+            entity.Property(x => x.BlockReason)
+                .HasColumnName("block_reason")
+                .HasMaxLength(255);
+
+            entity.Property(x => x.MaxPallets)
+                .HasColumnName("max_pallets");
+
+            entity.Property(x => x.CreatedAt)
+                .HasColumnName("created_at");
+
+            entity.Property(x => x.UpdatedAt)
+                .HasColumnName("updated_at");
+
+            entity.HasIndex(x => new { x.ZoneUuid, x.Name })
+                .IsUnique();
+
+            entity.HasOne(x => x.Zone)
+                .WithMany(x => x.Locations)
+                .HasForeignKey(x => x.ZoneUuid);
+
+            entity.HasMany(x => x.Pallets)
+                .WithOne(x => x.CurrentLocation)
+                .HasForeignKey(x => x.CurrentLocationUuid);
+        });
+
+        modelBuilder.Entity<ImportFile>(entity =>
+        {
+            entity.ToTable("import_files");
+            entity.HasKey(x => x.Uuid);
+
+            entity.Property(x => x.Uuid).HasColumnName("uuid").HasMaxLength(36);
+            entity.Property(x => x.SupplierUuid).HasColumnName("supplier_uuid").HasMaxLength(36);
+            entity.Property(x => x.FileName).HasColumnName("file_name").HasMaxLength(255).IsRequired();
+            entity.Property(x => x.StoredFilePath).HasColumnName("stored_file_path").HasMaxLength(500).IsRequired();
+            entity.Property(x => x.FileSizeBytes).HasColumnName("file_size_bytes");
+            entity.Property(x => x.ContentType).HasColumnName("content_type").HasMaxLength(100);
+            entity.Property(x => x.DetectedFormat).HasColumnName("detected_format").HasMaxLength(50);
+            entity.Property(x => x.Status).HasColumnName("status").HasMaxLength(30).IsRequired();
+            entity.Property(x => x.UploadedByUuid).HasColumnName("uploaded_by_uuid").HasMaxLength(36);
+            entity.Property(x => x.CreatedAt).HasColumnName("created_at");
+
+            entity.HasOne(x => x.Supplier)
+                .WithMany()
+                .HasForeignKey(x => x.SupplierUuid);
+
+            entity.HasMany(x => x.Rows)
+                .WithOne(x => x.ImportFile)
+                .HasForeignKey(x => x.ImportFileUuid);
+        });
+
+        modelBuilder.Entity<ImportRow>(entity =>
+        {
+            entity.ToTable("import_rows");
+            entity.HasKey(x => x.Uuid);
+
+            entity.Property(x => x.Uuid).HasColumnName("uuid").HasMaxLength(36);
+            entity.Property(x => x.ImportFileUuid).HasColumnName("import_file_uuid").HasMaxLength(36);
+            entity.Property(x => x.RowNumber).HasColumnName("row_num");
+            entity.Property(x => x.PalletNumber).HasColumnName("pallet_number").HasMaxLength(50);
+            entity.Property(x => x.Barcode).HasColumnName("barcode").HasMaxLength(100);
+            entity.Property(x => x.SupplierFilmName).HasColumnName("supplier_film_name").HasMaxLength(200);
+            entity.Property(x => x.FilmTypeUuid).HasColumnName("film_type_uuid").HasMaxLength(36);
+            entity.Property(x => x.ThicknessMicron).HasColumnName("thickness_micron");
+            entity.Property(x => x.WidthMm).HasColumnName("width_mm");
+            entity.Property(x => x.LengthM).HasColumnName("length_m");
+            entity.Property(x => x.RollCount).HasColumnName("roll_count");
+            entity.Property(x => x.NetWeightKg).HasColumnName("net_weight_kg").HasPrecision(12, 2);
+            entity.Property(x => x.GrossWeightKg).HasColumnName("gross_weight_kg").HasPrecision(12, 2);
+            entity.Property(x => x.BatchNumber).HasColumnName("batch_number").HasMaxLength(100);
+            entity.Property(x => x.WindDiameterMm).HasColumnName("wind_diameter_mm");
+            entity.Property(x => x.SpoolDiameterMm).HasColumnName("spool_diameter_mm");
+            entity.Property(x => x.PalletTypeUuid).HasColumnName("pallet_type_uuid").HasMaxLength(36);
+            entity.Property(x => x.Comment).HasColumnName("comment").HasMaxLength(1000);
+            entity.Property(x => x.IsValid).HasColumnName("is_valid");
+            entity.Property(x => x.ValidationErrors).HasColumnName("validation_errors");
+            entity.Property(x => x.IsSelected).HasColumnName("is_selected");
+            entity.Property(x => x.CreatedAt).HasColumnName("created_at");
+            entity.HasOne(x => x.ImportFile).WithMany(x => x.Rows).HasForeignKey(x => x.ImportFileUuid);
+            entity.HasOne(x => x.FilmType).WithMany().HasForeignKey(x => x.FilmTypeUuid);
+            entity.HasOne(x => x.PalletType).WithMany().HasForeignKey(x => x.PalletTypeUuid).HasConstraintName("FK_import_rows_pallet_types")
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasIndex(x => x.PalletTypeUuid).HasDatabaseName("IX_import_rows_pallet_type_uuid");
+        });
+
+        modelBuilder.Entity<MaterialReceipt>(entity =>
+        {
+            entity.ToTable("material_receipts");
+            entity.HasKey(x => x.Uuid);
+
+            entity.Property(x => x.Uuid)
+                .HasColumnName("uuid")
+                .HasMaxLength(36);
+
+            entity.Property(x => x.SupplierUuid)
+                .HasColumnName("supplier_uuid")
+                .HasMaxLength(36);
+
+            entity.Property(x => x.ReceiptNumber)
+                .HasColumnName("receipt_number")
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(x => x.ReceiptDate)
+                .HasColumnName("receipt_date");
+
+            entity.Property(x => x.Comment)
+                .HasColumnName("comment");
+
+            entity.Property(x => x.CreatedByUuid)
+                .HasColumnName("created_by_uuid")
+                .HasMaxLength(36);
+
+            entity.Property(x => x.CreatedAt)
+                .HasColumnName("created_at");
         });
 
         base.OnModelCreating(modelBuilder);

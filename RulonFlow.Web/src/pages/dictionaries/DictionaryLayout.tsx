@@ -2,9 +2,13 @@ import { NavLink, Outlet } from 'react-router-dom';
 
 const tabs = [
     { to: '/dictionaries/film-types', label: 'Марки плёнки' },
+    { to: '/dictionaries/film-brand-aliases', label: 'Соответствия марок' },
     { to: '/dictionaries/suppliers', label: 'Поставщики' },
     { to: '/dictionaries/counterparties', label: 'Контрагенты' },
-    { to: '/dictionaries/defect-reasons', label: 'Причины брака' }
+    { to: '/dictionaries/defect-reasons', label: 'Причины брака' },
+    { to: '/dictionaries/storage-zones', label: 'Склады' },
+    { to: '/dictionaries/receipt-import', label: 'Импорт поступлений' },
+    { to: "/dictionaries/pallet-types", label: "Типы паллет" },
 ];
 
 export default function DictionaryLayout() {

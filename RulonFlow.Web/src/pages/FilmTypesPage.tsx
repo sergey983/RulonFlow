@@ -12,7 +12,6 @@ import {
 
 const emptyFilmType = {
     brand: '',
-    displayName: '',
     densityGcm3: '',
     description: '',
     isActive: true
@@ -100,7 +99,6 @@ export default function FilmTypesPage() {
         setEditingFilmTypeUuid(filmType.uuid);
         setFilmTypeForm({
             brand: filmType.brand,
-            displayName: filmType.displayName,
             densityGcm3: filmType.densityGcm3?.toString() ?? '',
             description: filmType.description ?? '',
             isActive: filmType.isActive
@@ -115,7 +113,6 @@ export default function FilmTypesPage() {
 
         const payload = {
             brand: filmTypeForm.brand.trim(),
-            displayName: filmTypeForm.displayName.trim() || filmTypeForm.brand.trim(),
             densityGcm3: filmTypeForm.densityGcm3
                 ? Number(filmTypeForm.densityGcm3)
                 : null,
@@ -209,17 +206,6 @@ export default function FilmTypesPage() {
                     />
 
                     <input
-                        placeholder="Отображаемое название"
-                        value={filmTypeForm.displayName}
-                        onChange={e =>
-                            setFilmTypeForm({
-                                ...filmTypeForm,
-                                displayName: e.target.value
-                            })
-                        }
-                    />
-
-                    <input
                         type="number"
                         step="0.001"
                         placeholder="Плотность, г/см³"
@@ -284,9 +270,9 @@ export default function FilmTypesPage() {
                 <thead>
                 <tr>
                     <th>Марка</th>
-                    <th>Отображение</th>
                     <th>Плотность</th>
                     <th>Активна</th>
+                    <th></th>
                     <th></th>
                 </tr>
                 </thead>
@@ -303,7 +289,6 @@ export default function FilmTypesPage() {
                         }}
                     >
                         <td>{filmType.brand}</td>
-                        <td>{filmType.displayName}</td>
                         <td>{filmType.densityGcm3 ?? '—'}</td>
                         <td>{filmType.isActive ? 'Да' : 'Нет'}</td>
                         <td>
@@ -348,7 +333,7 @@ export default function FilmTypesPage() {
                         <input
                             type="number"
                             step="0.01"
-                            placeholder="Поверхность"
+                            placeholder="Поверхность, м²/кг"
                             value={paramForm.surface}
                             onChange={e =>
                                 setParamForm({
@@ -411,7 +396,7 @@ export default function FilmTypesPage() {
                         <thead>
                         <tr>
                             <th>Толщина, мкм</th>
-                            <th>Поверхность</th>
+                            <th>Поверхность, м²/кг</th>
                             <th>Цена, ₽</th>
                             <th>Активен</th>
                             <th></th>

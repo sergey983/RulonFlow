@@ -4,7 +4,6 @@ public class FilmType
 {
     public Guid Uuid { get; set; }
     public string Brand { get; set; } = string.Empty;
-    public string DisplayName { get; set; } = string.Empty;
     public decimal? DensityGcm3 { get; set; }
     public string? Description { get; set; }
     public bool IsActive { get; set; } = true;

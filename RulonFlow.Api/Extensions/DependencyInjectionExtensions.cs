@@ -2,6 +2,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RulonFlow.Api.Services;
+using RulonFlow.Api.Services.ImportReceipts;
+using RulonFlow.Api.Services.ImportReceipts.Parsers;
 using RulonFlow.Infrastructure.Persistence;
 
 namespace RulonFlow.Api.Extensions;
@@ -26,6 +28,15 @@ public static class DependencyInjectionExtensions
         this IServiceCollection services)
     {
         services.AddScoped<AuthService>();
+
+        services.AddScoped<IReceiptImportParser, GettelReceiptImportParser>();
+        services.AddScoped<IReceiptImportParser, BiaksplenReceiptImportParser>();
+        services.AddScoped<IReceiptImportParser, VoterfallReceiptImportParser>();
+        services.AddScoped<IReceiptImportParser, ManualReceiptImportParser>();
+
+        services.AddScoped<ImportFormatDetector>();
+        services.AddScoped<ReceiptImportParserService>();
+
         return services;
     }
 }

@@ -30,9 +30,7 @@ public class FilmTypesController : ControllerBase
 
         if (!string.IsNullOrWhiteSpace(search))
         {
-            query = query.Where(x =>
-                x.Brand.Contains(search) ||
-                x.DisplayName.Contains(search));
+            query = query.Where(x => x.Brand.Contains(search));
         }
 
         if (isActive.HasValue)
@@ -49,7 +47,6 @@ public class FilmTypesController : ControllerBase
             .Select(x => new FilmTypeDto(
                 x.Uuid,
                 x.Brand,
-                x.DisplayName,
                 x.DensityGcm3,
                 x.Description,
                 x.IsActive
@@ -74,7 +71,6 @@ public class FilmTypesController : ControllerBase
             .Select(x => new FilmTypeDto(
                 x.Uuid,
                 x.Brand,
-                x.DisplayName,
                 x.DensityGcm3,
                 x.Description,
                 x.IsActive
@@ -94,6 +90,227 @@ public class FilmTypesController : ControllerBase
         }
 
         return Ok(item);
+    }
+
+    [HttpGet("{uuid:guid}/params")]
+    public async Task<IActionResult> GetFilmTypeParams(Guid uuid)
+    {
+        var filmTypeExists = await _dbContext.FilmTypes
+            .AsNoTracking()
+            .AnyAsync(x => x.Uuid == uuid);
+
+        if (!filmTypeExists)
+        {
+            return NotFound(new
+            {
+                error = new
+                {
+                    code = "FILM_TYPE_NOT_FOUND",
+                    message = "Марка плёнки не найдена."
+                }
+            });
+        }
+
+        var items = await _dbContext.FilmTypeParams
+            .AsNoTracking()
+            .Where(x => x.FilmTypeUuid == uuid)
+            .OrderBy(x => x.ThicknessMicron)
+            .Select(x => new FilmTypeParamDto(
+                x.Uuid,
+                x.FilmTypeUuid,
+                x.ThicknessMicron,
+                x.Surface,
+                x.Price,
+                x.CurrencyCode,
+                x.IsActive
+            ))
+            .ToListAsync();
+
+        return Ok(new { items });
+    }
+
+    [HttpPost("{uuid:guid}/params")]
+    public async Task<IActionResult> CreateFilmTypeParam(
+        Guid uuid,
+        [FromBody] FilmTypeParamFormValues request)
+    {
+        var filmType = await _dbContext.FilmTypes
+            .FirstOrDefaultAsync(x => x.Uuid == uuid);
+
+        if (filmType is null)
+        {
+            return NotFound(new
+            {
+                error = new
+                {
+                    code = "FILM_TYPE_NOT_FOUND",
+                    message = "Марка плёнки не найдена."
+                }
+            });
+        }
+
+        if (request.ThicknessMicron <= 0)
+        {
+            return BadRequest(new
+            {
+                error = new
+                {
+                    code = "VALIDATION_ERROR",
+                    message = "Толщина должна быть больше 0."
+                }
+            });
+        }
+
+        var exists = await _dbContext.FilmTypeParams
+            .AnyAsync(x =>
+                x.FilmTypeUuid == uuid &&
+                x.ThicknessMicron == request.ThicknessMicron);
+
+        if (exists)
+        {
+            return Conflict(new
+            {
+                error = new
+                {
+                    code = "FILM_TYPE_PARAM_ALREADY_EXISTS",
+                    message = "Для этой марки уже задана указанная толщина."
+                }
+            });
+        }
+
+        var item = new FilmTypeParam
+        {
+            Uuid = Guid.NewGuid(),
+            FilmTypeUuid = uuid,
+            ThicknessMicron = request.ThicknessMicron,
+            Surface = request.Surface,
+            Price = request.Price,
+            CurrencyCode = string.IsNullOrWhiteSpace(request.CurrencyCode)
+                ? "RUB"
+                : request.CurrencyCode.Trim().ToUpperInvariant(),
+            IsActive = request.IsActive,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _dbContext.FilmTypeParams.Add(item);
+        await _dbContext.SaveChangesAsync();
+
+        return CreatedAtAction(
+            nameof(GetFilmTypeParams),
+            new { uuid },
+            new FilmTypeParamDto(
+                item.Uuid,
+                item.FilmTypeUuid,
+                item.ThicknessMicron,
+                item.Surface,
+                item.Price,
+                item.CurrencyCode,
+                item.IsActive
+            )
+        );
+    }
+
+    [HttpPatch("{uuid:guid}/params/{paramUuid:guid}")]
+    public async Task<IActionResult> UpdateFilmTypeParam(
+        Guid uuid,
+        Guid paramUuid,
+        [FromBody] FilmTypeParamFormValues request)
+    {
+        var item = await _dbContext.FilmTypeParams
+            .FirstOrDefaultAsync(x =>
+                x.Uuid == paramUuid &&
+                x.FilmTypeUuid == uuid);
+
+        if (item is null)
+        {
+            return NotFound(new
+            {
+                error = new
+                {
+                    code = "FILM_TYPE_PARAM_NOT_FOUND",
+                    message = "Параметр марки плёнки не найден."
+                }
+            });
+        }
+
+        if (request.ThicknessMicron <= 0)
+        {
+            return BadRequest(new
+            {
+                error = new
+                {
+                    code = "VALIDATION_ERROR",
+                    message = "Толщина должна быть больше 0."
+                }
+            });
+        }
+
+        var exists = await _dbContext.FilmTypeParams
+            .AnyAsync(x =>
+                x.Uuid != paramUuid &&
+                x.FilmTypeUuid == uuid &&
+                x.ThicknessMicron == request.ThicknessMicron);
+
+        if (exists)
+        {
+            return Conflict(new
+            {
+                error = new
+                {
+                    code = "FILM_TYPE_PARAM_ALREADY_EXISTS",
+                    message = "Для этой марки уже задана указанная толщина."
+                }
+            });
+        }
+
+        item.ThicknessMicron = request.ThicknessMicron;
+        item.Surface = request.Surface;
+        item.Price = request.Price;
+        item.CurrencyCode = string.IsNullOrWhiteSpace(request.CurrencyCode)
+            ? "RUB"
+            : request.CurrencyCode.Trim().ToUpperInvariant();
+        item.IsActive = request.IsActive;
+        item.UpdatedAt = DateTime.UtcNow;
+
+        await _dbContext.SaveChangesAsync();
+
+        return Ok(new FilmTypeParamDto(
+            item.Uuid,
+            item.FilmTypeUuid,
+            item.ThicknessMicron,
+            item.Surface,
+            item.Price,
+            item.CurrencyCode,
+            item.IsActive
+        ));
+    }
+
+    [HttpDelete("{uuid:guid}/params/{paramUuid:guid}")]
+    public async Task<IActionResult> DeleteFilmTypeParam(
+        Guid uuid,
+        Guid paramUuid)
+    {
+        var item = await _dbContext.FilmTypeParams
+            .FirstOrDefaultAsync(x =>
+                x.Uuid == paramUuid &&
+                x.FilmTypeUuid == uuid);
+
+        if (item is null)
+        {
+            return NotFound(new
+            {
+                error = new
+                {
+                    code = "FILM_TYPE_PARAM_NOT_FOUND",
+                    message = "Параметр марки плёнки не найден."
+                }
+            });
+        }
+
+        _dbContext.FilmTypeParams.Remove(item);
+        await _dbContext.SaveChangesAsync();
+
+        return NoContent();
     }
 
     [HttpPost]
@@ -133,9 +350,6 @@ public class FilmTypesController : ControllerBase
         {
             Uuid = Guid.NewGuid(),
             Brand = brand,
-            DisplayName = string.IsNullOrWhiteSpace(request.DisplayName)
-                ? brand
-                : request.DisplayName.Trim(),
             DensityGcm3 = request.DensityGcm3,
             Description = request.Description,
             IsActive = request.IsActive,
@@ -151,7 +365,6 @@ public class FilmTypesController : ControllerBase
             new FilmTypeDto(
                 item.Uuid,
                 item.Brand,
-                item.DisplayName,
                 item.DensityGcm3,
                 item.Description,
                 item.IsActive
@@ -211,9 +424,6 @@ public class FilmTypesController : ControllerBase
         }
 
         item.Brand = brand;
-        item.DisplayName = string.IsNullOrWhiteSpace(request.DisplayName)
-            ? brand
-            : request.DisplayName.Trim();
         item.DensityGcm3 = request.DensityGcm3;
         item.Description = request.Description;
         item.IsActive = request.IsActive;
@@ -224,7 +434,6 @@ public class FilmTypesController : ControllerBase
         return Ok(new FilmTypeDto(
             item.Uuid,
             item.Brand,
-            item.DisplayName,
             item.DensityGcm3,
             item.Description,
             item.IsActive

@@ -1,4 +1,5 @@
-﻿// RulonFlow.Api/Controllers/CounterpartiesController.cs
+﻿﻿// RulonFlow.Api/Controllers/CounterpartiesController.cs
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RulonFlow.Domain.Entities;
@@ -8,6 +9,7 @@ namespace RulonFlow.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/counterparties")]
+[Authorize]
 public class CounterpartiesController : ControllerBase
 {
     private readonly RulonFlowDbContext _db;

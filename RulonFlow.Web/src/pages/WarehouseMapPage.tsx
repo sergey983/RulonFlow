@@ -5,6 +5,11 @@ import {
     updateStorageLocation,
     type StorageLocation
 } from "../api/storage";
+import Button from "../ui/Button";
+import Input from "../ui/Input";
+import Card from "../ui/Card";
+import Badge from "../ui/Badge";
+import './SharedPage.css';
 
 export default function WarehouseMapPage() {
     const { zoneUuid } = useParams();
@@ -12,6 +17,7 @@ export default function WarehouseMapPage() {
     const [locations, setLocations] = useState<StorageLocation[]>([]);
     const [selected, setSelected] = useState<StorageLocation | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [saving, setSaving] = useState(false);
 
     async function load() {
         if (!zoneUuid) return;
@@ -49,23 +55,21 @@ export default function WarehouseMapPage() {
 
     function cellStyle(location: StorageLocation) {
         if (!location.isActive) {
-            return { background: "#e5e7eb", color: "#6b7280" };
+            return { background: '#f1f5f9', color: '#94a3b8', borderColor: '#e2e8f0' };
         }
-
         if (location.isBlocked) {
-            return { background: "#fecaca", color: "#991b1b" };
+            return { background: '#fef2f2', color: '#991b1b', borderColor: '#fecaca' };
         }
-
         if (location.palletCount >= location.maxPallets) {
-            return { background: "#fde68a", color: "#92400e" };
+            return { background: '#fef3c7', color: '#92400e', borderColor: '#fde68a' };
         }
-
-        return { background: "#bbf7d0", color: "#166534" };
+        return { background: '#d1fae5', color: '#065f46', borderColor: '#a7f3d0' };
     }
 
     async function save() {
         if (!selected) return;
 
+        setSaving(true);
         try {
             await updateStorageLocation(selected.uuid, {
                 name: selected.name,
@@ -80,6 +84,8 @@ export default function WarehouseMapPage() {
             await load();
         } catch {
             setError("Не удалось сохранить изменения");
+        } finally {
+            setSaving(false);
         }
     }
 
@@ -88,109 +94,105 @@ export default function WarehouseMapPage() {
     }
 
     return (
-        <div>
-            <h2>Карта склада</h2>
+        <div className="entity-page">
+            <div className="section-header">
+                <div className="section-header__title">
+                    <h1>Карта склада</h1>
+                </div>
+                <div style={{ display: 'flex', gap: 12 }}>
+                    <Badge variant="success">● Свободна</Badge>
+                    <Badge variant="warning">● Заполнена</Badge>
+                    <Badge variant="danger">● Заблокирована</Badge>
+                    <Badge variant="default">● Неактивна</Badge>
+                </div>
+            </div>
 
-            {error && <p style={{ color: "red" }}>{error}</p>}
+            {error && (
+                <div className="alert alert--danger">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="15" y1="9" x2="9" y2="15" />
+                        <line x1="9" y1="9" x2="15" y2="15" />
+                    </svg>
+                    <span>{error}</span>
+                </div>
+            )}
 
-            <table cellPadding={6} style={{ borderCollapse: "collapse" }}>
-                <tbody>
+            <div className="warehouse-grid">
                 {rows.map(({ row, cells }) => (
-                    <tr key={row}>
-                        <td style={{ fontWeight: 700 }}>{row}</td>
-
-                        {cells.map(cell => (
-                            <td key={cell.uuid}>
+                    <div key={row} className="warehouse-row">
+                        <div className="warehouse-row__label">{row}</div>
+                        <div className="warehouse-row__cells">
+                            {cells.map(cell => (
                                 <button
-                                    style={{
-                                        width: 70,
-                                        height: 44,
-                                        border: "1px solid #9ca3af",
-                                        borderRadius: 6,
-                                        cursor: "pointer",
-                                        ...cellStyle(cell)
-                                    }}
+                                    key={cell.uuid}
+                                    className="warehouse-cell"
+                                    style={cellStyle(cell)}
                                     onClick={() => setSelected(cell)}
+                                    title={cell.name}
                                 >
-                                    {cell.name}
-                                    <br />
-                                    {cell.palletCount}/{cell.maxPallets}
+                                    <span className="warehouse-cell__name">{cell.name}</span>
+                                    <span className="warehouse-cell__count">
+                                        {cell.palletCount}/{cell.maxPallets}
+                                    </span>
                                 </button>
-                            </td>
-                        ))}
-                    </tr>
+                            ))}
+                        </div>
+                    </div>
                 ))}
-                </tbody>
-            </table>
+            </div>
 
             {selected && (
-                <div
-                    style={{
-                        marginTop: 24,
-                        padding: 16,
-                        border: "1px solid #d1d5db",
-                        borderRadius: 8,
-                        maxWidth: 420
-                    }}
-                >
-                    <h3>Ячейка {selected.name}</h3>
+                <div className="modal-overlay" onClick={() => setSelected(null)}>
+                    <Card className="modal-card" onClick={e => e.stopPropagation()}>
+                        <h2>Ячейка {selected.name}</h2>
 
-                    <label style={{ display: "block", marginBottom: 8 }}>
-                        <input
-                            type="checkbox"
-                            checked={selected.isActive}
-                            onChange={e =>
-                                setSelected({ ...selected, isActive: e.target.checked })
-                            }
-                        />
-                        Активна
-                    </label>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                            <label className="checkbox-wrapper">
+                                <input
+                                    type="checkbox"
+                                    checked={selected.isActive}
+                                    onChange={e => setSelected({ ...selected, isActive: e.target.checked })}
+                                />
+                                <span>Активна</span>
+                            </label>
 
-                    <label style={{ display: "block", marginBottom: 8 }}>
-                        <input
-                            type="checkbox"
-                            checked={selected.isBlocked}
-                            onChange={e =>
-                                setSelected({ ...selected, isBlocked: e.target.checked })
-                            }
-                        />
-                        Запрещена для размещения
-                    </label>
+                            <label className="checkbox-wrapper">
+                                <input
+                                    type="checkbox"
+                                    checked={selected.isBlocked}
+                                    onChange={e => setSelected({ ...selected, isBlocked: e.target.checked })}
+                                />
+                                <span>Запрещена для размещения</span>
+                            </label>
 
-                    {selected.isBlocked && (
-                        <input
-                            placeholder="Причина запрета"
-                            value={selected.blockReason ?? ""}
-                            onChange={e =>
-                                setSelected({ ...selected, blockReason: e.target.value })
-                            }
-                            style={{ width: "100%", marginBottom: 8 }}
-                        />
-                    )}
+                            {selected.isBlocked && (
+                                <Input
+                                    label="Причина запрета"
+                                    value={selected.blockReason ?? ""}
+                                    onChange={e => setSelected({ ...selected, blockReason: e.target.value })}
+                                    placeholder="Укажите причину"
+                                />
+                            )}
 
-                    <label style={{ display: "block", marginBottom: 12 }}>
-                        Вместимость, паллет:
-                        <input
-                            type="number"
-                            min={0}
-                            value={selected.maxPallets}
-                            onChange={e =>
-                                setSelected({
-                                    ...selected,
-                                    maxPallets: Number(e.target.value)
-                                })
-                            }
-                            style={{ width: 80, marginLeft: 8 }}
-                        />
-                    </label>
+                            <Input
+                                label="Вместимость, паллет"
+                                type="number"
+                                min={0}
+                                value={selected.maxPallets}
+                                onChange={e => setSelected({ ...selected, maxPallets: Number(e.target.value) })}
+                            />
 
-                    <button onClick={save}>Сохранить</button>
-                    <button
-                        style={{ marginLeft: 8 }}
-                        onClick={() => setSelected(null)}
-                    >
-                        Отмена
-                    </button>
+                            <div className="entity-page__form-actions">
+                                <Button variant="primary" onClick={save} disabled={saving}>
+                                    {saving ? 'Сохранение…' : 'Сохранить'}
+                                </Button>
+                                <Button variant="secondary" onClick={() => setSelected(null)}>
+                                    Отмена
+                                </Button>
+                            </div>
+                        </div>
+                    </Card>
                 </div>
             )}
         </div>

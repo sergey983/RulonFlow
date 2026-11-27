@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RulonFlow.Api.DTOs.FilmBrandAliases;
 using RulonFlow.Domain.Entities;
@@ -8,6 +9,7 @@ namespace RulonFlow.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/film-brand-aliases")]
+[Authorize]
 public class FilmBrandAliasesController : ControllerBase
 {
     private readonly RulonFlowDbContext _db;

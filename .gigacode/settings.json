@@ -1,0 +1,62 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(timeout *)",
+      "Bash(taskkill *)",
+      "Bash(dotnet *)",
+      "Bash(type *)",
+      "mcp__MySQL_rulonflow__mysql_query",
+      "Bash(rd *)",
+      "Bash(dir *)",
+      "Bash(powershell *)",
+      "Bash(\"cd /d c:\\users\\sizovsv\\source\\repos\\rulonflow && dir /b *.sln\")",
+      "Bash(\"cd /d c:\\users\\sizovsv\\source\\repos\\rulonflow && dotnet new sln --force --name rulonflow --overwrite rulonflow.slnx && dotnet sln rulonflow.sln add rulonflow.api\\rulonflow.api.csproj rulonflow.application\\rulonflow.application.csproj rulonflow.domain\\rulonflow.domain.csproj rulonflow.infrastructure\\rulonflow.infrastructure.csproj\")",
+      "Bash(\"cd /d c:\\users\\sizovsv\\source\\repos\\rulonflow && ren rulonflow.slnx rulonflow.slnx.bak && dotnet new sln --force --name rulonflow\")",
+      "Bash(\"cd /d c:\\users\\sizovsv\\source\\repos\\rulonflow && dotnet sln rulonflow.sln add rulonflow.api\\rulonflow.api.csproj && dotnet sln rulonflow.sln add rulonflow.application\\rulonflow.application.csproj && dotnet sln rulonflow.sln add rulonflow.domain\\rulonflow.domain.csproj && dotnet sln rulonflow.sln add rulonflow.infrastructure\\rulonflow.infrastructure.csproj\")",
+      "Bash(\"cd /d c:\\users\\sizovsv\\source\\repos\\rulonflow && dir /b *.sln *.slnx\")",
+      "Bash(findstr *)",
+      "Bash(\"more c:\\users\\sizovsv\\source\\repos\\rulonflow\\rulonflow.domain\\rulonflow.domain.csproj\")",
+      "Bash(msbuild *)",
+      "Bash(mkdir *)",
+      "Bash(cd *)",
+      "Bash(devenv *)",
+      "Bash(c:\\program *)",
+      "Bash(\"c:\\program files\\microsoft visual studio\\18\\insiders\\common7\\ide\\commonextensions\\microsoft\\msbuild\\msbuild.exe\" *)",
+      "Bash(\"set msbuild=c:\\program files\\microsoft visual studio\\18\\insiders\\common7\\ide\\commonextensions\\microsoft\\msbuild\\msbuild.exe && set solution=c:\\users\\sizovsv\\source\\repos\\rulonflow\\rulonflow.sln && %msbuild% \"%solution%\" /t:build /p:configuration=debug /v:minimal /nologo\")",
+      "Bash(\"c:\\program files\\microsoft visual studio\\18\\insiders\\common7\\ide\\commonextensions\\microsoft\\msbuild\\current\\bin\\msbuild.exe\" *)",
+      "Bash(\"call \"c:\\program *)",
+      "Bash(call *)",
+      "Bash(nuget *)",
+      "Bash(del *)",
+      "Bash(rmdir *)",
+      "Bash(python *)",
+      "Bash(copy *)",
+      "Bash(select-object *)",
+      "Bash(curl *)",
+      "Bash(netstat *)",
+      "Bash(mysql *)",
+      "Bash(select-string *)",
+      "Bash(move *)"
+    ]
+  },
+  "$version": 3,
+  "mcpServers": {
+    "mysql_rulonflow": {
+      "command": "C:\\Program Files\\nodejs\\npx.cmd",
+      "args": [
+        "-y",
+        "@benborla29/mcp-server-mysql"
+      ],
+      "env": {
+        "MYSQL_HOST": "127.0.0.1",
+        "MYSQL_PORT": "3306",
+        "MYSQL_USER": "gigacode_io",
+        "MYSQL_PASS": "Qwe!!gigacode_io",
+        "MYSQL_DB": "rulonflow",
+        "MYSQL_CONNECT_TIMEOUT": "15000"
+      },
+      "description": "Локальная MySQL, только чтение gigacode_io Qwe!!gigacode_io"
+    }
+  }
+}

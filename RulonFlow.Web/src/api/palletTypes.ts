@@ -1,4 +1,4 @@
-const baseUrl = "/api/v1/pallet-types";
+import { api } from './client';
 
 export interface PalletType {
     uuid: string;
@@ -25,50 +25,27 @@ export interface PagedResult<T> {
     totalPages: number;
 }
 
-async function request<T>(url: string, init?: RequestInit): Promise<T> {
-    const response = await fetch(url, {
-        ...init,
-        headers: {
-            "Content-Type": "application/json",
-            ...(init?.headers ?? {}),
-        },
-    });
-
-    if (!response.ok) {
-        const body = await response.json().catch(() => null);
-        throw new Error(body?.error?.message ?? "Ошибка запроса");
-    }
-
-    return response.json() as Promise<T>;
-}
-
 export async function getPalletTypes(
     page = 1,
     pageSize = 100,
 ): Promise<PagedResult<PalletType>> {
-    const params = new URLSearchParams({
-        page: String(page),
-        pageSize: String(pageSize),
+    const res = await api.get<PagedResult<PalletType>>('/pallet-types', {
+        params: { page, pageSize }
     });
-
-    return request<PagedResult<PalletType>>(`${baseUrl}?${params}`);
+    return res.data;
 }
 
 export async function createPalletType(
     values: PalletTypeFormValues,
 ): Promise<PalletType> {
-    return request<PalletType>(baseUrl, {
-        method: "POST",
-        body: JSON.stringify(values),
-    });
+    const res = await api.post<PalletType>('/pallet-types', values);
+    return res.data;
 }
 
 export async function updatePalletType(
     uuid: string,
     values: PalletTypeFormValues,
 ): Promise<PalletType> {
-    return request<PalletType>(`${baseUrl}/${uuid}`, {
-        method: "PUT",
-        body: JSON.stringify(values),
-    });
+    const res = await api.put<PalletType>(`/pallet-types/${uuid}`, values);
+    return res.data;
 }

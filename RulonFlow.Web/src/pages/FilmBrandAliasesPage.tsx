@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { api } from "../api/client";
 import {
     getFilmBrandAliases,
     createFilmBrandAlias,
@@ -6,6 +7,13 @@ import {
     type FilmBrandAlias,
     type FilmBrandAliasFormValues
 } from "../api/filmBrandAliases";
+import Button from "../ui/Button";
+import Select from "../ui/Select";
+import Input from "../ui/Input";
+import Modal from "../ui/Modal";
+import Badge from "../ui/Badge";
+import Table, { TableHeader, TableBody, TableRow, TableCell } from "../ui/Table";
+import './SharedPage.css';
 
 type Supplier = { uuid: string; name: string };
 type FilmType = { uuid: string; brand: string };
@@ -14,29 +22,42 @@ export default function FilmBrandAliasesPage() {
     const [items, setItems] = useState<FilmBrandAlias[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [filmTypes, setFilmTypes] = useState<FilmType[]>([]);
-    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [loadError, setError] = useState<string | null>(null);
 
+    const [showForm, setShowForm] = useState(false);
     const [form, setForm] = useState<FilmBrandAliasFormValues>({
         supplierUuid: "",
         supplierFilmName: "",
         filmTypeUuid: "",
         isActive: true
     });
+    const [formError, setFormError] = useState<string | null>(null);
+    const [saving, setSaving] = useState(false);
 
     async function load() {
+        setLoading(true);
+        setError(null);
         try {
-            const [aliases, suppliersRes, filmTypesRes] = await Promise.all([
+            const [aliases, suppliersResp, filmTypesResp] = await Promise.all([
                 getFilmBrandAliases(),
-                fetch("/api/v1/suppliers?pageSize=200").then(r => r.json()),
-                fetch("/api/v1/film-types?pageSize=200").then(r => r.json())
+                api.get("/suppliers", { params: { pageSize: 200 } }),
+                api.get("/film-types", { params: { pageSize: 200 } })
             ]);
 
             setItems(aliases);
-            setSuppliers(suppliersRes.items);
-            setFilmTypes(filmTypesRes.items);
-            setError(null);
-        } catch {
-            setError("Не удалось загрузить данные справочников");
+            setSuppliers(suppliersResp.data.items);
+            setFilmTypes(filmTypesResp.data.items);
+        } catch (e: any) {
+            const msg = e?.response?.data?.error?.message 
+                || e?.response?.data?.error 
+                || e?.response?.data?.message 
+                || e?.message 
+                || "Не удалось загрузить данные справочников";
+            console.error("Load error:", e);
+            setError(msg);
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -44,24 +65,53 @@ export default function FilmBrandAliasesPage() {
         load();
     }, []);
 
-    async function submit(event: React.FormEvent) {
-        event.preventDefault();
+    function openCreate() {
+        setForm({
+            supplierUuid: "",
+            supplierFilmName: "",
+            filmTypeUuid: "",
+            isActive: true
+        });
+        setFormError(null);
+        setShowForm(true);
+    }
+
+    function closeForm() {
+        setShowForm(false);
+        setFormError(null);
+    }
+
+    async function submit() {
+        if (!form.supplierUuid) {
+            setFormError("Выберите поставщика.");
+            return;
+        }
+        if (!form.supplierFilmName.trim()) {
+            setFormError("Укажите название у поставщика.");
+            return;
+        }
+        if (!form.filmTypeUuid) {
+            setFormError("Выберите нашу марку.");
+            return;
+        }
+
+        setSaving(true);
+        setFormError(null);
 
         try {
             await createFilmBrandAlias(form);
-            setForm({
-                supplierUuid: "",
-                supplierFilmName: "",
-                filmTypeUuid: "",
-                isActive: true
-            });
+            closeForm();
             await load();
         } catch {
-            setError("Не удалось создать соответствие");
+            setFormError("Не удалось создать соответствие");
+        } finally {
+            setSaving(false);
         }
     }
 
     async function remove(uuid: string) {
+        if (!window.confirm("Удалить это соответствие?")) return;
+
         try {
             await deleteFilmBrandAlias(uuid);
             await load();
@@ -70,84 +120,144 @@ export default function FilmBrandAliasesPage() {
         }
     }
 
+    const supplierOptions = suppliers.map(s => ({
+        value: s.uuid,
+        label: s.name
+    }));
+
+    const filmTypeOptions = filmTypes.map(f => ({
+        value: f.uuid,
+        label: f.brand
+    }));
+
     return (
-        <div>
-            <h1>Соответствия марок</h1>
+        <div className="entity-page">
+            <div className="section-header">
+                <div className="section-header__title">
+                    <h1>Соответствия марок</h1>
+                </div>
+                <Button variant="primary" onClick={openCreate}>
+                    + Добавить
+                </Button>
+            </div>
 
-            {error && <p style={{ color: "red" }}>{error}</p>}
+            {loadError && (
+                <div className="alert alert--danger">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="15" y1="9" x2="9" y2="15" />
+                        <line x1="9" y1="9" x2="15" y2="15" />
+                    </svg>
+                    <span>{loadError}</span>
+                </div>
+            )}
 
-            <form onSubmit={submit}>
-                <select
-                    value={form.supplierUuid}
-                    onChange={e => setForm({ ...form, supplierUuid: e.target.value })}
-                    required
-                >
-                    <option value="">Поставщик</option>
-                    {suppliers.map(s => (
-                        <option key={s.uuid} value={s.uuid}>
-                            {s.name}
-                        </option>
-                    ))}
-                </select>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableCell th>Поставщик</TableCell>
+                        <TableCell th>Название у поставщика</TableCell>
+                        <TableCell th>Наша марка</TableCell>
+                        <TableCell th>Статус</TableCell>
+                        <TableCell th className="table__cell--actions">Действия</TableCell>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {loading ? (
+                        <TableRow>
+                            <TableCell th={false} colSpan={5} className="text-center">Загрузка…</TableCell>
+                        </TableRow>
+                    ) : (
+                        <>
+                            {items.map(item => (
+                                <TableRow key={item.uuid}>
+                                    <TableCell>{item.supplierName}</TableCell>
+                                    <TableCell><strong>{item.supplierFilmName}</strong></TableCell>
+                                    <TableCell><Badge variant="info">{item.filmBrand}</Badge></TableCell>
+                                    <TableCell>
+                                        <Badge variant={item.isActive ? 'success' : 'default'}>
+                                            {item.isActive ? 'Активно' : 'Неактивно'}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="table__cell--actions">
+                                        <Button variant="ghost" size="sm" onClick={() => remove(item.uuid)} className="btn--danger">
+                                            Удалить
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                            {items.length === 0 && (
+                                <TableRow>
+                                    <TableCell th={false} colSpan={5} className="text-center">
+                                        <div className="empty-state">
+                                            <div className="empty-state__icon">🔄</div>
+                                            <div className="empty-state__title">Нет данных</div>
+                                            <div className="empty-state__description">Добавьте первое соответствие</div>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </>
+                    )}
+                </TableBody>
+            </Table>
 
-                <input
-                    placeholder="Название у поставщика"
-                    value={form.supplierFilmName}
-                    onChange={e =>
-                        setForm({ ...form, supplierFilmName: e.target.value })
-                    }
-                    required
-                />
+            <Modal
+                isOpen={showForm}
+                onClose={closeForm}
+                title="Новое соответствие"
+                actions={
+                    <>
+                        <Button variant="primary" onClick={submit} disabled={saving}>
+                            {saving ? 'Сохранение…' : 'Добавить'}
+                        </Button>
+                        <Button variant="secondary" onClick={closeForm} disabled={saving}>
+                            Отмена
+                        </Button>
+                    </>
+                }
+            >
+                {formError && (
+                    <div className="alert alert--danger" style={{ marginBottom: 0 }}>
+                        <span>{formError}</span>
+                    </div>
+                )}
 
-                <select
-                    value={form.filmTypeUuid}
-                    onChange={e => setForm({ ...form, filmTypeUuid: e.target.value })}
-                    required
-                >
-                    <option value="">Наша марка</option>
-                    {filmTypes.map(f => (
-                        <option key={f.uuid} value={f.uuid}>
-                            {f.brand}
-                        </option>
-                    ))}
-                </select>
-
-                <label>
-                    <input
-                        type="checkbox"
-                        checked={form.isActive}
-                        onChange={e => setForm({ ...form, isActive: e.target.checked })}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    <Select
+                        label="Поставщик"
+                        options={supplierOptions}
+                        placeholder="Выберите поставщика"
+                        value={form.supplierUuid}
+                        onChange={e => setForm({ ...form, supplierUuid: e.target.value })}
+                        required
                     />
-                    Активно
-                </label>
+                    <Input
+                        label="Название у поставщика"
+                        placeholder="Например: Плёнка ХХ-100"
+                        value={form.supplierFilmName}
+                        onChange={e => setForm({ ...form, supplierFilmName: e.target.value })}
+                        required
+                    />
+                    <Select
+                        label="Наша марка"
+                        options={filmTypeOptions}
+                        placeholder="Выберите марку"
+                        value={form.filmTypeUuid}
+                        onChange={e => setForm({ ...form, filmTypeUuid: e.target.value })}
+                        required
+                    />
 
-                <button type="submit">Добавить</button>
-            </form>
-
-            <table border={1} cellPadding={8}>
-                <thead>
-                <tr>
-                    <th>Поставщик</th>
-                    <th>Название у поставщика</th>
-                    <th>Наша марка</th>
-                    <th>Активно</th>
-                    <th></th>
-                </tr>
-                </thead>
-                <tbody>
-                {items.map(item => (
-                    <tr key={item.uuid}>
-                        <td>{item.supplierName}</td>
-                        <td>{item.supplierFilmName}</td>
-                        <td>{item.filmBrand}</td>
-                        <td>{item.isActive ? "Да" : "Нет"}</td>
-                        <td>
-                            <button onClick={() => remove(item.uuid)}>Удалить</button>
-                        </td>
-                    </tr>
-                ))}
-                </tbody>
-            </table>
+                    <label className="checkbox-wrapper">
+                        <input
+                            type="checkbox"
+                            checked={form.isActive}
+                            onChange={e => setForm({ ...form, isActive: e.target.checked })}
+                        />
+                        <span>Активно</span>
+                    </label>
+                </div>
+            </Modal>
         </div>
     );
 }

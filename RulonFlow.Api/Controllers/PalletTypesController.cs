@@ -1,4 +1,5 @@
-﻿// RulonFlow.Api/Controllers/PalletTypesController.cs
+﻿﻿// RulonFlow.Api/Controllers/PalletTypesController.cs
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RulonFlow.Domain.Entities;
@@ -8,6 +9,7 @@ namespace RulonFlow.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/pallet-types")]
+[Authorize]
 public class PalletTypesController : ControllerBase
 {
     private readonly RulonFlowDbContext _db;

@@ -3,427 +3,238 @@ import {
     getFilmTypes,
     createFilmType,
     updateFilmType,
-    getFilmTypeParams,
-    createFilmTypeParam,
-    updateFilmTypeParam,
-    type FilmType,
-    type FilmTypeParam
+    type FilmType
 } from '../api/filmTypes';
+import Button from '../ui/Button';
+import Input from '../ui/Input';
+import Modal from '../ui/Modal';
+import Badge from '../ui/Badge';
+import Table, { TableHeader, TableBody, TableRow, TableCell } from '../ui/Table';
+import './SharedPage.css';
 
-const emptyFilmType = {
+interface FilmTypeFormState {
+    brand: string;
+    densityGcm3: string;
+    description: string;
+    isActive: boolean;
+}
+
+const emptyForm: FilmTypeFormState = {
     brand: '',
     densityGcm3: '',
     description: '',
     isActive: true
 };
 
-const emptyParam = {
-    thicknessMicron: 0,
-    surface: '',
-    price: '',
-    currencyCode: 'RUB',
-    isActive: true
-};
-
 export default function FilmTypesPage() {
-    const [filmTypes, setFilmTypes] = useState<FilmType[]>([]);
-    const [selectedFilmType, setSelectedFilmType] = useState<FilmType | null>(null);
-    const [params, setParams] = useState<FilmTypeParam[]>([]);
+    const [items, setItems] = useState<FilmType[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [loadError, setLoadError] = useState<string | null>(null);
 
-    const [filmTypeForm, setFilmTypeForm] = useState(emptyFilmType);
-    const [editingFilmTypeUuid, setEditingFilmTypeUuid] = useState<string | null>(null);
+    const [showForm, setShowForm] = useState(false);
+    const [editing, setEditing] = useState<FilmType | null>(null);
+    const [form, setForm] = useState<FilmTypeFormState>(emptyForm);
+    const [formError, setFormError] = useState<string | null>(null);
+    const [saving, setSaving] = useState(false);
 
-    const [paramForm, setParamForm] = useState(emptyParam);
-    const [editingParamUuid, setEditingParamUuid] = useState<string | null>(null);
-
-    const [error, setError] = useState('');
-
-    useEffect(() => {
-        let cancelled = false;
-
-        async function load() {
-            try {
-                const result = await getFilmTypes();
-
-                if (!cancelled) {
-                    setFilmTypes(result.items);
-                    setError('');
-                }
-            } catch {
-                if (!cancelled) {
-                    setError('Не удалось загрузить марки плёнки.');
-                }
-            }
-        }
-
-        void load();
-
-        return () => {
-            cancelled = true;
-        };
-    }, []);
-
-    function handleSelectFilmType(filmType: FilmType) {
-        setSelectedFilmType(filmType);
-        setParams([]);
-        setEditingParamUuid(null);
-        setParamForm(emptyParam);
-
-        void loadParams(filmType);
-    }
-    async function reloadFilmTypes() {
+    const load = async () => {
+        setLoading(true);
+        setLoadError(null);
         try {
             const result = await getFilmTypes();
-            setFilmTypes(result.items);
-            setError('');
+            setItems(result.items);
         } catch {
-            setError('Не удалось загрузить марки плёнки.');
+            setLoadError('Не удалось загрузить марки плёнки.');
+        } finally {
+            setLoading(false);
         }
-    }
-    async function loadParams(filmType: FilmType) {
-        try {
-            const result = await getFilmTypeParams(filmType.uuid);
-            setParams(result.items);
-            setError('');
-        } catch {
-            setError('Не удалось загрузить параметры марки.');
-        }
+    };
+
+    useEffect(() => {
+        load();
+    }, []);
+
+    function openCreate() {
+        setEditing(null);
+        setForm(emptyForm);
+        setFormError(null);
+        setShowForm(true);
     }
 
-    function startEditFilmType(filmType: FilmType) {
-        setSelectedFilmType(null);
-        setParams([]);
-        setEditingParamUuid(null);
-        setParamForm(emptyParam);
-
-        setEditingFilmTypeUuid(filmType.uuid);
-        setFilmTypeForm({
-            brand: filmType.brand,
-            densityGcm3: filmType.densityGcm3?.toString() ?? '',
-            description: filmType.description ?? '',
-            isActive: filmType.isActive
+    function openEdit(item: FilmType) {
+        setEditing(item);
+        setForm({
+            brand: item.brand,
+            densityGcm3: item.densityGcm3?.toString() ?? '',
+            description: item.description ?? '',
+            isActive: item.isActive
         });
+        setFormError(null);
+        setShowForm(true);
     }
 
-    async function saveFilmType() {
-        if (!filmTypeForm.brand.trim()) {
-            setError('Укажите марку.');
+    function closeForm() {
+        setShowForm(false);
+        setFormError(null);
+    }
+
+    async function save() {
+        if (!form.brand.trim()) {
+            setFormError('Укажите марку.');
             return;
         }
 
+        setSaving(true);
+        setFormError(null);
+
         const payload = {
-            brand: filmTypeForm.brand.trim(),
-            densityGcm3: filmTypeForm.densityGcm3
-                ? Number(filmTypeForm.densityGcm3)
-                : null,
-            description: filmTypeForm.description.trim() || null,
-            isActive: filmTypeForm.isActive
+            brand: form.brand.trim(),
+            densityGcm3: form.densityGcm3 ? Number(form.densityGcm3) : null,
+            description: form.description.trim() || null,
+            isActive: form.isActive
         };
 
         try {
-            if (editingFilmTypeUuid) {
-                await updateFilmType(editingFilmTypeUuid, payload);
+            if (editing) {
+                await updateFilmType(editing.uuid, payload);
             } else {
                 await createFilmType(payload);
             }
-
-            setEditingFilmTypeUuid(null);
-            setFilmTypeForm(emptyFilmType);
-            await reloadFilmTypes();
+            closeForm();
+            await load();
         } catch {
-            setError('Не удалось сохранить марку.');
-        }
-    }
-
-
-    function startEditParam(param: FilmTypeParam) {
-        setEditingParamUuid(param.uuid);
-        setParamForm({
-            thicknessMicron: param.thicknessMicron,
-            surface: param.surface?.toString() ?? '',
-            price: param.price?.toString() ?? '',
-            currencyCode: param.currencyCode,
-            isActive: param.isActive
-        });
-    }
-
-    async function saveParam() {
-        if (!selectedFilmType) return;
-
-        if (!paramForm.thicknessMicron || paramForm.thicknessMicron <= 0) {
-            setError('Укажите толщину больше нуля.');
-            return;
-        }
-
-        const payload = {
-            thicknessMicron: Number(paramForm.thicknessMicron),
-            surface: paramForm.surface ? Number(paramForm.surface) : null,
-            price: paramForm.price ? Number(paramForm.price) : null,
-            currencyCode: paramForm.currencyCode || 'RUB',
-            isActive: paramForm.isActive
-        };
-
-        try {
-            if (editingParamUuid) {
-                await updateFilmTypeParam(
-                    selectedFilmType.uuid,
-                    editingParamUuid,
-                    payload
-                );
-            } else {
-                await createFilmTypeParam(selectedFilmType.uuid, payload);
-            }
-
-            setEditingParamUuid(null);
-            setParamForm(emptyParam);
-            await loadParams(selectedFilmType);
-        } catch {
-            setError('Не удалось сохранить параметр марки.');
+            setFormError('Не удалось сохранить марку.');
+        } finally {
+            setSaving(false);
         }
     }
 
     return (
-        <div>
-            <h1>Марки плёнки</h1>
+        <div className="entity-page">
+            <div className="section-header">
+                <div className="section-header__title">
+                    <h1>Марки плёнки</h1>
+                </div>
+                <Button variant="primary" onClick={openCreate}>
+                    + Добавить
+                </Button>
+            </div>
 
-            {error && <p style={{ color: 'var(--danger)' }}>{error}</p>}
+            {loadError && (
+                <div className="alert alert--danger">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="15" y1="9" x2="9" y2="15" />
+                        <line x1="9" y1="9" x2="15" y2="15" />
+                    </svg>
+                    <span>{loadError} <a onClick={() => load()} style={{ textDecoration: 'underline', cursor: 'pointer' }}>Повторить</a></span>
+                </div>
+            )}
 
-            <section className="card" style={{ marginBottom: 24 }}>
-                <h2>
-                    {editingFilmTypeUuid ? 'Редактирование марки' : 'Новая марка'}
-                </h2>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableCell th>Марка</TableCell>
+                        <TableCell th>Плотность, г/см³</TableCell>
+                        <TableCell th>Описание</TableCell>
+                        <TableCell th>Статус</TableCell>
+                        <TableCell th className="table__cell--actions">Действия</TableCell>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {loading ? (
+                        <TableRow>
+                            <TableCell th={false} colSpan={5} className="text-center">Загрузка…</TableCell>
+                        </TableRow>
+                    ) : (
+                        <>
+                            {items.map(item => (
+                                <TableRow key={item.uuid}>
+                                    <TableCell><strong>{item.brand}</strong></TableCell>
+                                    <TableCell><code>{item.densityGcm3 ?? '—'}</code></TableCell>
+                                    <TableCell className="text-muted text-sm">{item.description}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={item.isActive ? 'success' : 'default'}>
+                                            {item.isActive ? 'Активна' : 'Неактивна'}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="table__cell--actions">
+                                        <Button variant="ghost" size="sm" onClick={() => openEdit(item)}>
+                                            Изменить
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                            {items.length === 0 && (
+                                <TableRow>
+                                    <TableCell th={false} colSpan={5} className="text-center">
+                                        <div className="empty-state">
+                                            <div className="empty-state__icon">🎞️</div>
+                                            <div className="empty-state__title">Нет данных</div>
+                                            <div className="empty-state__description">Добавьте первую марку плёнки</div>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </>
+                    )}
+                </TableBody>
+            </Table>
 
-                <div style={{ display: 'grid', gap: 12, maxWidth: 520 }}>
-                    <input
-                        placeholder="Марка, например HGPL"
-                        value={filmTypeForm.brand}
-                        onChange={e =>
-                            setFilmTypeForm({
-                                ...filmTypeForm,
-                                brand: e.target.value
-                            })
-                        }
+            <Modal
+                isOpen={showForm}
+                onClose={closeForm}
+                title={editing ? 'Редактировать марку' : 'Новая марка'}
+                actions={
+                    <>
+                        <Button variant="primary" onClick={save} disabled={saving}>
+                            {saving ? 'Сохранение…' : editing ? 'Сохранить' : 'Добавить'}
+                        </Button>
+                        <Button variant="secondary" onClick={closeForm} disabled={saving}>
+                            Отмена
+                        </Button>
+                    </>
+                }
+            >
+                {formError && (
+                    <div className="alert alert--danger" style={{ marginBottom: 0 }}>
+                        <span>{formError}</span>
+                    </div>
+                )}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    <Input
+                        label="Марка"
+                        placeholder="HGPL"
+                        value={form.brand}
+                        onChange={e => setForm({ ...form, brand: e.target.value })}
+                        required
                     />
-
-                    <input
+                    <Input
+                        label="Плотность, г/см³"
                         type="number"
                         step="0.001"
-                        placeholder="Плотность, г/см³"
-                        value={filmTypeForm.densityGcm3}
-                        onChange={e =>
-                            setFilmTypeForm({
-                                ...filmTypeForm,
-                                densityGcm3: e.target.value
-                            })
-                        }
+                        placeholder="0.93"
+                        value={form.densityGcm3}
+                        onChange={e => setForm({ ...form, densityGcm3: e.target.value })}
+                    />
+                    <Input
+                        label="Описание"
+                        placeholder="Описание марки"
+                        value={form.description}
+                        onChange={e => setForm({ ...form, description: e.target.value })}
                     />
 
-                    <input
-                        placeholder="Описание"
-                        value={filmTypeForm.description}
-                        onChange={e =>
-                            setFilmTypeForm({
-                                ...filmTypeForm,
-                                description: e.target.value
-                            })
-                        }
-                    />
-
-                    <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <label className="checkbox-wrapper">
                         <input
                             type="checkbox"
-                            checked={filmTypeForm.isActive}
-                            onChange={e =>
-                                setFilmTypeForm({
-                                    ...filmTypeForm,
-                                    isActive: e.target.checked
-                                })
-                            }
+                            checked={form.isActive}
+                            onChange={e => setForm({ ...form, isActive: e.target.checked })}
                         />
-                        Активна
+                        <span>Активна</span>
                     </label>
-
-                    <div style={{ display: 'flex', gap: 8 }}>
-                        <button
-                            className="btn btn-primary"
-                            onClick={() => void saveFilmType()}
-                        >
-                            {editingFilmTypeUuid ? 'Сохранить' : 'Добавить'}
-                        </button>
-
-                        {editingFilmTypeUuid && (
-                            <button
-                                className="btn"
-                                onClick={() => {
-                                    setEditingFilmTypeUuid(null);
-                                    setFilmTypeForm(emptyFilmType);
-                                }}
-                            >
-                                Отмена
-                            </button>
-                        )}
-                    </div>
                 </div>
-            </section>
-
-            <table>
-                <thead>
-                <tr>
-                    <th>Марка</th>
-                    <th>Плотность</th>
-                    <th>Активна</th>
-                    <th></th>
-                    <th></th>
-                </tr>
-                </thead>
-
-                <tbody>
-                {filmTypes.map(filmType => (
-                    <tr
-                        key={filmType.uuid}
-                        style={{
-                            background:
-                                selectedFilmType?.uuid === filmType.uuid
-                                    ? 'var(--accent-bg)'
-                                    : undefined
-                        }}
-                    >
-                        <td>{filmType.brand}</td>
-                        <td>{filmType.densityGcm3 ?? '—'}</td>
-                        <td>{filmType.isActive ? 'Да' : 'Нет'}</td>
-                        <td>
-                            <button
-                                className="btn"
-                                onClick={() => handleSelectFilmType(filmType)}
-                            >
-                                Параметры
-                            </button>
-
-                            <button
-                                className="btn"
-                                onClick={() => startEditFilmType(filmType)}
-                            >
-                                Изменить
-                            </button>
-                        </td>
-                    </tr>
-                ))}
-                </tbody>
-            </table>
-
-            {selectedFilmType && (
-                <section className="card" style={{ marginTop: 32 }}>
-                    <h2>
-                        Параметры марки: {selectedFilmType.brand}
-                    </h2>
-
-                    <div style={{ display: 'grid', gap: 12, maxWidth: 520, marginBottom: 24 }}>
-                        <input
-                            type="number"
-                            placeholder="Толщина, мкм"
-                            value={paramForm.thicknessMicron || ''}
-                            onChange={e =>
-                                setParamForm({
-                                    ...paramForm,
-                                    thicknessMicron: Number(e.target.value)
-                                })
-                            }
-                        />
-
-                        <input
-                            type="number"
-                            step="0.01"
-                            placeholder="Поверхность, м²/кг"
-                            value={paramForm.surface}
-                            onChange={e =>
-                                setParamForm({
-                                    ...paramForm,
-                                    surface: e.target.value
-                                })
-                            }
-                        />
-
-                        <input
-                            type="number"
-                            step="0.01"
-                            placeholder="Цена, ₽"
-                            value={paramForm.price}
-                            onChange={e =>
-                                setParamForm({
-                                    ...paramForm,
-                                    price: e.target.value
-                                })
-                            }
-                        />
-
-                        <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                            <input
-                                type="checkbox"
-                                checked={paramForm.isActive}
-                                onChange={e =>
-                                    setParamForm({
-                                        ...paramForm,
-                                        isActive: e.target.checked
-                                    })
-                                }
-                            />
-                            Активен
-                        </label>
-
-                        <div style={{ display: 'flex', gap: 8 }}>
-                            <button
-                                className="btn btn-primary"
-                                onClick={() => void saveParam()}
-                            >
-                                {editingParamUuid ? 'Сохранить параметр' : 'Добавить параметр'}
-                            </button>
-
-                            {editingParamUuid && (
-                                <button
-                                    className="btn"
-                                    onClick={() => {
-                                        setEditingParamUuid(null);
-                                        setParamForm(emptyParam);
-                                    }}
-                                >
-                                    Отмена
-                                </button>
-                            )}
-                        </div>
-                    </div>
-
-                    <table>
-                        <thead>
-                        <tr>
-                            <th>Толщина, мкм</th>
-                            <th>Поверхность, м²/кг</th>
-                            <th>Цена, ₽</th>
-                            <th>Активен</th>
-                            <th></th>
-                        </tr>
-                        </thead>
-
-                        <tbody>
-                        {params.map(param => (
-                            <tr key={param.uuid}>
-                                <td>{param.thicknessMicron}</td>
-                                <td>{param.surface ?? '—'}</td>
-                                <td>{param.price ?? '—'}</td>
-                                <td>{param.isActive ? 'Да' : 'Нет'}</td>
-                                <td>
-                                    <button
-                                        className="btn"
-                                        onClick={() => startEditParam(param)}
-                                    >
-                                        Изменить
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                </section>
-            )}
+            </Modal>
         </div>
     );
 }

@@ -1,4 +1,4 @@
-﻿namespace RulonFlow.Api.DTOs.Auth;
+﻿﻿﻿namespace RulonFlow.Api.DTOs.Auth;
 
 public record LoginResponseDto(
     string AccessToken,
@@ -10,4 +10,5 @@ public record UserDto(
     Guid Uuid,
     string Login,
     string FullName,
-    string Role);
+    IEnumerable<string> Roles,
+    IEnumerable<string> Permissions);

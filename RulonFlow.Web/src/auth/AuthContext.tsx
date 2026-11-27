@@ -10,7 +10,8 @@ type User = {
     uuid: string;
     login: string;
     fullName: string;
-    role: string;
+    roles: string[];
+    permissions: string[];
 };
 
 type AuthContextValue = {

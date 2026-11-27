@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿﻿﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RulonFlow.Api.DTOs.ImportReceipts;
 using RulonFlow.Api.Services;
@@ -20,6 +21,7 @@ public record ImportFileDto(
 
 [ApiController]
 [Route("api/v1/import/receipts")]
+[Authorize]
 public class ImportReceiptsController : ControllerBase
 {
     private readonly RulonFlowDbContext _db;

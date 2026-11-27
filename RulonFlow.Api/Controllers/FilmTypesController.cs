@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿﻿﻿﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RulonFlow.Api.DTOs.FilmTypes;
 using RulonFlow.Domain.Entities;
@@ -8,6 +9,7 @@ namespace RulonFlow.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/film-types")]
+[Authorize]
 public class FilmTypesController : ControllerBase
 {
     private readonly RulonFlowDbContext _dbContext;
@@ -118,6 +120,7 @@ public class FilmTypesController : ControllerBase
             .Select(x => new FilmTypeParamDto(
                 x.Uuid,
                 x.FilmTypeUuid,
+                x.FilmType.Brand,
                 x.ThicknessMicron,
                 x.Surface,
                 x.Price,
@@ -127,6 +130,148 @@ public class FilmTypesController : ControllerBase
             .ToListAsync();
 
         return Ok(new { items });
+    }
+
+    [HttpGet("params")]
+    public async Task<IActionResult> GetAllFilmTypeParams(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        [FromQuery] string? search = null,
+        [FromQuery] bool? isActive = null)
+    {
+        var query = _dbContext.FilmTypeParams
+            .AsNoTracking()
+            .Include(x => x.FilmType)
+            .AsQueryable();
+
+        if (isActive.HasValue)
+        {
+            query = query.Where(x => x.IsActive == isActive);
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var items = await query
+            .OrderBy(x => x.FilmType.Brand)
+            .ThenBy(x => x.ThicknessMicron)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(x => new FilmTypeParamDto(
+                x.Uuid,
+                x.FilmTypeUuid,
+                x.FilmType.Brand,
+                x.ThicknessMicron,
+                x.Surface,
+                x.Price,
+                x.CurrencyCode,
+                x.IsActive
+            ))
+            .ToListAsync();
+
+        return Ok(new
+        {
+            items,
+            page,
+            pageSize,
+            totalCount
+        });
+    }
+
+    [HttpPatch("params/{paramUuid:guid}")]
+    public async Task<IActionResult> UpdateFilmTypeParam(
+        Guid paramUuid,
+        [FromBody] FilmTypeParamFormValues request)
+    {
+        var item = await _dbContext.FilmTypeParams
+            .FirstOrDefaultAsync(x => x.Uuid == paramUuid);
+
+        if (item is null)
+        {
+            return NotFound(new
+            {
+                error = new
+                {
+                    code = "FILM_TYPE_PARAM_NOT_FOUND",
+                    message = "Параметр марки плёнки не найден."
+                }
+            });
+        }
+
+        if (request.ThicknessMicron <= 0)
+        {
+            return BadRequest(new
+            {
+                error = new
+                {
+                    code = "VALIDATION_ERROR",
+                    message = "Толщина должна быть больше 0."
+                }
+            });
+        }
+
+        var exists = await _dbContext.FilmTypeParams
+            .AnyAsync(x =>
+                x.Uuid != paramUuid &&
+                x.FilmTypeUuid == item.FilmTypeUuid &&
+                x.ThicknessMicron == request.ThicknessMicron);
+
+        if (exists)
+        {
+            return Conflict(new
+            {
+                error = new
+                {
+                    code = "FILM_TYPE_PARAM_ALREADY_EXISTS",
+                    message = "Для этой марки уже задана указанная толщина."
+                }
+            });
+        }
+
+        item.ThicknessMicron = request.ThicknessMicron;
+        item.Surface = request.Surface;
+        item.Price = request.Price;
+        item.CurrencyCode = string.IsNullOrWhiteSpace(request.CurrencyCode)
+            ? "RUB"
+            : request.CurrencyCode.Trim().ToUpperInvariant();
+        item.IsActive = request.IsActive;
+        item.UpdatedAt = DateTime.UtcNow;
+
+        await _dbContext.SaveChangesAsync();
+
+        return Ok(new FilmTypeParamDto(
+            item.Uuid,
+            item.FilmTypeUuid,
+            item.FilmType.Brand,
+            item.ThicknessMicron,
+            item.Surface,
+            item.Price,
+            item.CurrencyCode,
+            item.IsActive
+        ));
+    }
+
+    [HttpDelete("params/{paramUuid:guid}")]
+    public async Task<IActionResult> DeleteFilmTypeParam(Guid paramUuid)
+    {
+        var item = await _dbContext.FilmTypeParams
+            .FirstOrDefaultAsync(x => x.Uuid == paramUuid);
+
+        if (item is null)
+        {
+            return NotFound(new
+            {
+                error = new
+                {
+                    code = "FILM_TYPE_PARAM_NOT_FOUND",
+                    message = "Параметр марки плёнки не найден."
+                }
+            });
+        }
+
+        _dbContext.FilmTypeParams.Remove(item);
+        await _dbContext.SaveChangesAsync();
+
+        return NoContent();
     }
 
     [HttpPost("{uuid:guid}/params")]
@@ -201,6 +346,7 @@ public class FilmTypesController : ControllerBase
             new FilmTypeParamDto(
                 item.Uuid,
                 item.FilmTypeUuid,
+                item.FilmType.Brand,
                 item.ThicknessMicron,
                 item.Surface,
                 item.Price,
@@ -277,6 +423,7 @@ public class FilmTypesController : ControllerBase
         return Ok(new FilmTypeParamDto(
             item.Uuid,
             item.FilmTypeUuid,
+            item.FilmType.Brand,
             item.ThicknessMicron,
             item.Surface,
             item.Price,

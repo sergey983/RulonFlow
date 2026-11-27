@@ -1,0 +1,76 @@
+.technologist-layout {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.technologist-layout__header {
+    margin-bottom: 20px;
+}
+
+.technologist-layout__header h1 {
+    margin: 0 0 16px;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-h);
+}
+
+.technologist-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.technologist-tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.technologist-tab:hover {
+    color: var(--text);
+    background: var(--bg);
+}
+
+.technologist-tab--active {
+    background: var(--accent-bg);
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.technologist-tab__icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    opacity: 0.75;
+}
+
+.technologist-tab--active .technologist-tab__icon {
+    opacity: 1;
+}
+
+.technologist-layout__content {
+    animation: slideIn 0.3s ease-out;
+}
+
+@media (max-width: 768px) {
+    .technologist-tabs {
+        flex-wrap: wrap;
+    }
+
+    .technologist-tab {
+        flex: 1;
+        justify-content: center;
+        min-width: 100px;
+    }
+}

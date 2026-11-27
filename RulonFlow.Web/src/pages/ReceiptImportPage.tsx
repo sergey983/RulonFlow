@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import type { Supplier } from "../api/suppliers";
+import { getSuppliers, type Supplier } from "../api/suppliers";
 import {createPalletType, getPalletTypes,} from "../api/palletTypes";
 import type { PalletType } from "../api/palletTypes";
-import {confirmImportReceipt, type ConfirmImportReceiptRequest,} from "../api/importReceipts";
+import {confirmImportReceipt, type ConfirmImportReceiptRequest, uploadImportReceipt, parseImportReceipt, getImportReceiptDetails} from "../api/importReceipts";
 import { getAccessToken } from "../api/auth";
 
 interface ImportFileResult {
@@ -48,10 +48,6 @@ interface ImportPallet {
     rows: ImportRow[];
 }
 
-interface ImportFileDetails extends ImportFileResult {
-    pallets: ImportPallet[];
-}
-
 export default function ReceiptImportPage() {
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [supplierUuid, setSupplierUuid] = useState("");
@@ -73,25 +69,14 @@ export default function ReceiptImportPage() {
 
     const loadDictionaries = useCallback(async () => {
         try {
-            const response = await fetch(
-                "/api/v1/suppliers?pageSize=200&isActive=true",
-            );
-
-            if (!response.ok) {
-                throw new Error();
-            }
-
-            const data = await response.json();
-            setSuppliers(data.items);
-        } catch {
-            setError("Не удалось загрузить справочники");
-        }
-        try {
-            const palletTypesData = await getPalletTypes(1, 200);
-
+            const [suppliersRes, palletTypesData] = await Promise.all([
+                getSuppliers(),
+                getPalletTypes(1, 200),
+            ]);
+            setSuppliers(suppliersRes.items);
             setPalletTypes(palletTypesData.items);
         } catch {
-            setError("Не удалось загрузить справочник поддонов");
+            setError("Не удалось загрузить справочники");
         }
     }, []);
 
@@ -106,29 +91,11 @@ export default function ReceiptImportPage() {
     async function upload() {
         if (!file || !supplierUuid) return;
 
-        const form = new FormData();
-        form.append("file", file);
-        form.append("supplierUuid", supplierUuid);
-
         setLoading(true);
         setError(null);
 
         try {
-            const response = await fetch(
-                "/api/v1/import/receipts/file",
-                {
-                    method: "POST",
-                    body: form,
-                },
-            );
-
-            if (!response.ok) {
-                throw new Error("Не удалось загрузить файл");
-            }
-
-            const uploaded =
-                await response.json() as ImportFileResult;
-
+            const uploaded = await uploadImportReceipt(file, supplierUuid);
             setResult(uploaded);
             setPallets([]);
         } catch (e) {
@@ -149,37 +116,11 @@ export default function ReceiptImportPage() {
         setError(null);
 
         try {
-            const parseResponse = await fetch(
-                `/api/v1/import/receipts/${result.uuid}/parse`,
-                { method: "POST" },
-            );
+            await parseImportReceipt(result.uuid);
 
-            if (!parseResponse.ok) {
-                throw new Error("Не удалось разобрать файл");
-            }
+            const details = await getImportReceiptDetails(result.uuid);
 
-            const parsed =
-                await parseResponse.json() as ImportFileResult;
-
-            setResult({
-                ...result,
-                ...parsed,
-            });
-
-            const rowsResponse = await fetch(
-                `/api/v1/import/receipts/${result.uuid}`,
-            );
-
-            if (!rowsResponse.ok) {
-                throw new Error(
-                    "Не удалось загрузить строки импорта",
-                );
-            }
-
-            const rowsData =
-                await rowsResponse.json() as ImportFileDetails;
-
-            const normalizedPallets = rowsData.pallets.map(pallet => ({
+            const normalizedPallets = details.pallets.map(pallet => ({
                 ...pallet,
                 rows: pallet.rows.map(row => ({
                     ...row,

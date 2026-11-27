@@ -1,0 +1,17 @@
+.jobs-placeholder {
+    text-align: center;
+    padding: 64px 32px;
+}
+
+.jobs-placeholder__icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.jobs-placeholder h2 {
+    margin: 0 0 8px;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-h);
+}

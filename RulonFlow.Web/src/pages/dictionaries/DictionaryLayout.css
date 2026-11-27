@@ -1,0 +1,59 @@
+.dictionary-layout {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.dictionary-layout__header {
+    margin-bottom: 20px;
+}
+
+.dictionary-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 24px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.dictionary-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.dictionary-tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.dictionary-tab:hover {
+    background: var(--bg);
+    color: var(--text);
+}
+
+.dictionary-tab--active {
+    background: var(--accent);
+    color: #ffffff;
+    box-shadow: var(--shadow-sm);
+}
+
+.dictionary-tab__icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.dictionary-layout__content {
+    animation: fadeIn 0.25s ease-out;
+}

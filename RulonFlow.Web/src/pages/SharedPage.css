@@ -1,0 +1,251 @@
+.entity-page {
+    animation: fadeIn 0.3s ease-out;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.entity-page__form {
+    margin-bottom: 8px;
+}
+
+.entity-page__form-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.entity-page__form-actions {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    padding-top: 4px;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.alert {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    animation: slideIn 0.3s ease-out;
+}
+
+.alert--danger {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border: 1px solid var(--danger-border);
+}
+
+.alert svg {
+    flex-shrink: 0;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 32px 24px;
+    color: var(--text-muted);
+}
+
+.empty-state__icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+    opacity: 0.5;
+}
+
+.empty-state__title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-h);
+    margin-bottom: 4px;
+}
+
+.empty-state__description {
+    font-size: 13px;
+}
+
+/* === Modal === */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 24px;
+    animation: fadeIn 0.2s ease-out;
+    backdrop-filter: blur(6px);
+}
+
+.modal-card {
+    width: 100%;
+    max-width: 520px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideIn 0.25s ease-out;
+    background: var(--surface);
+    border-radius: 16px;
+    box-shadow: var(--shadow-xl), 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--border);
+}
+
+.modal-card--wide {
+    max-width: 640px;
+}
+
+.modal-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--divider);
+    background: var(--section-bg);
+    border-radius: 16px 16px 0 0;
+    margin: 0;
+}
+
+.modal-card__header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-h);
+    letter-spacing: -0.02em;
+}
+
+.modal-card__close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.modal-card__close:hover {
+    background: var(--bg);
+    color: var(--text-h);
+}
+
+.modal-card__close:active {
+    background: var(--border);
+    transform: scale(0.95);
+}
+
+.modal-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px 24px 24px;
+}
+
+/* Modal actions — positioned at bottom of body */
+.modal-card__actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    align-items: center;
+    padding-top: 8px;
+    border-top: 1px solid var(--divider);
+    margin-top: 8px;
+}
+
+.entity-page__form--expanded {
+    margin-top: 16px;
+}
+
+.entity-page__entity {
+    margin-top: 20px;
+}
+
+.entity-page__form-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+.entity-page__form-header h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-h);
+}
+
+/* === Warehouse Map === */
+.warehouse-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.warehouse-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.warehouse-row__label {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text-h);
+    min-width: 60px;
+    text-align: center;
+}
+
+.warehouse-row__cells {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    flex: 1;
+}
+
+.warehouse-cell {
+    width: 64px;
+    height: 40px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    line-height: 1.2;
+    transition: all var(--transition-fast);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.warehouse-cell:hover {
+    transform: scale(1.08);
+    box-shadow: var(--shadow-md);
+    z-index: 1;
+    position: relative;
+}
+
+.warehouse-cell__name {
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.warehouse-cell__count {
+    font-size: 9px;
+    opacity: 0.8;
+}

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿﻿﻿﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RulonFlow.Api.Services;
@@ -28,6 +28,7 @@ public static class DependencyInjectionExtensions
         this IServiceCollection services)
     {
         services.AddScoped<AuthService>();
+        services.AddScoped<IPermissionService, PermissionService>();
 
         services.AddScoped<IReceiptImportParser, GettelReceiptImportParser>();
         services.AddScoped<IReceiptImportParser, BiaksplenReceiptImportParser>();

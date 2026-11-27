@@ -1,4 +1,4 @@
-const api = "/api/v1";
+import { api } from "./client";
 
 export type StorageZone = {
     uuid: string;
@@ -23,17 +23,13 @@ export type StorageLocation = {
 };
 
 export async function getStorageZones(): Promise<StorageZone[]> {
-    const res = await fetch(`${api}/storage-zones`);
-    if (!res.ok) throw new Error("Не удалось загрузить склады");
-    const data = await res.json();
-    return data.items;
+    const res = await api.get("/storage-zones");
+    return res.data.items;
 }
 
 export async function getStorageLocations(zoneUuid: string): Promise<StorageLocation[]> {
-    const res = await fetch(`${api}/storage-zones/${zoneUuid}/locations`);
-    if (!res.ok) throw new Error("Не удалось загрузить карту склада");
-    const data = await res.json();
-    return data.items;
+    const res = await api.get(`/storage-zones/${zoneUuid}/locations`);
+    return res.data.items;
 }
 
 export async function updateStorageLocation(

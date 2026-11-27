@@ -5,8 +5,20 @@ import {
     updateSupplier,
     type Supplier
 } from '../api/suppliers';
+import Button from '../ui/Button';
+import Input from '../ui/Input';
+import Modal from '../ui/Modal';
+import Badge from '../ui/Badge';
+import Table, { TableHeader, TableBody, TableRow, TableCell } from '../ui/Table';
+import './SharedPage.css';
 
-const emptyForm = {
+interface SupplierFormState {
+    name: string;
+    inn: string;
+    isActive: boolean;
+}
+
+const emptyForm: SupplierFormState = {
     name: '',
     inn: '',
     isActive: true
@@ -14,17 +26,25 @@ const emptyForm = {
 
 export default function SuppliersPage() {
     const [items, setItems] = useState<Supplier[]>([]);
-    const [form, setForm] = useState(emptyForm);
-    const [editingUuid, setEditingUuid] = useState<string | null>(null);
-    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [loadError, setError] = useState('');
+
+    const [showForm, setShowForm] = useState(false);
+    const [editing, setEditing] = useState<Supplier | null>(null);
+    const [form, setForm] = useState<SupplierFormState>(emptyForm);
+    const [formError, setFormError] = useState('');
+    const [saving, setSaving] = useState(false);
 
     async function load() {
+        setLoading(true);
+        setError('');
         try {
             const result = await getSuppliers();
             setItems(result.items);
-            setError('');
         } catch {
             setError('Не удалось загрузить поставщиков.');
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -32,25 +52,37 @@ export default function SuppliersPage() {
         load();
     }, []);
 
-    function startEdit(item: Supplier) {
-        setEditingUuid(item.uuid);
+    function openCreate() {
+        setEditing(null);
+        setForm(emptyForm);
+        setFormError('');
+        setShowForm(true);
+    }
+
+    function openEdit(item: Supplier) {
+        setEditing(item);
         setForm({
             name: item.name,
             inn: item.inn ?? '',
             isActive: item.isActive
         });
+        setFormError('');
+        setShowForm(true);
     }
 
-    function cancelEdit() {
-        setEditingUuid(null);
-        setForm(emptyForm);
+    function closeForm() {
+        setShowForm(false);
+        setFormError('');
     }
 
     async function save() {
         if (!form.name.trim()) {
-            setError('Укажите наименование поставщика.');
+            setFormError('Укажите наименование поставщика.');
             return;
         }
+
+        setSaving(true);
+        setFormError('');
 
         const payload = {
             name: form.name.trim(),
@@ -59,86 +91,136 @@ export default function SuppliersPage() {
         };
 
         try {
-            if (editingUuid) {
-                await updateSupplier(editingUuid, payload);
+            if (editing) {
+                await updateSupplier(editing.uuid, payload);
             } else {
                 await createSupplier(payload);
             }
-
-            cancelEdit();
+            closeForm();
             await load();
         } catch {
-            setError('Не удалось сохранить поставщика.');
+            setFormError('Не удалось сохранить поставщика.');
+        } finally {
+            setSaving(false);
         }
     }
 
     return (
-        <main style={{ padding: 24, fontFamily: 'sans-serif' }}>
-            <h1>Поставщики</h1>
+        <div className="entity-page">
+            <div className="section-header">
+                <div className="section-header__title">
+                    <h1>Поставщики</h1>
+                </div>
+                <Button variant="primary" onClick={openCreate}>
+                    + Добавить
+                </Button>
+            </div>
 
-            {error && <p style={{ color: 'red' }}>{error}</p>}
+            {loadError && (
+                <div className="alert alert--danger">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="15" y1="9" x2="9" y2="15" />
+                        <line x1="9" y1="9" x2="15" y2="15" />
+                    </svg>
+                    <span>{loadError}</span>
+                </div>
+            )}
 
-            <section
-                style={{
-                    border: '1px solid #ccc',
-                    padding: 16,
-                    marginBottom: 24,
-                    maxWidth: 560
-                }}
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableCell th>Наименование</TableCell>
+                        <TableCell th>ИНН</TableCell>
+                        <TableCell th>Статус</TableCell>
+                        <TableCell th className="table__cell--actions">Действия</TableCell>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {loading ? (
+                        <TableRow>
+                            <TableCell th={false} colSpan={4} className="text-center">Загрузка…</TableCell>
+                        </TableRow>
+                    ) : (
+                        <>
+                            {items.map(item => (
+                                <TableRow key={item.uuid}>
+                                    <TableCell><strong>{item.name}</strong></TableCell>
+                                    <TableCell><code>{item.inn}</code></TableCell>
+                                    <TableCell>
+                                        <Badge variant={item.isActive ? 'success' : 'default'}>
+                                            {item.isActive ? 'Активен' : 'Неактивен'}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="table__cell--actions">
+                                        <Button variant="ghost" size="sm" onClick={() => openEdit(item)}>
+                                            Изменить
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                            {items.length === 0 && (
+                                <TableRow>
+                                    <TableCell th={false} colSpan={4} className="text-center">
+                                        <div className="empty-state">
+                                            <div className="empty-state__icon">🏭</div>
+                                            <div className="empty-state__title">Нет данных</div>
+                                            <div className="empty-state__description">Добавьте первого поставщика</div>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </>
+                    )}
+                </TableBody>
+            </Table>
+
+            <Modal
+                isOpen={showForm}
+                onClose={closeForm}
+                title={editing ? 'Редактировать поставщика' : 'Новый поставщик'}
+                actions={
+                    <>
+                        <Button variant="primary" onClick={save} disabled={saving}>
+                            {saving ? 'Сохранение…' : editing ? 'Сохранить' : 'Добавить'}
+                        </Button>
+                        <Button variant="secondary" onClick={closeForm} disabled={saving}>
+                            Отмена
+                        </Button>
+                    </>
+                }
             >
-                <h2>{editingUuid ? 'Редактирование' : 'Новый поставщик'}</h2>
+                {formError && (
+                    <div className="alert alert--danger" style={{ marginBottom: 0 }}>
+                        <span>{formError}</span>
+                    </div>
+                )}
 
-                <div style={{ display: 'grid', gap: 8 }}>
-                    <input
-                        placeholder="Наименование"
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    <Input
+                        label="Наименование"
+                        placeholder="ООО «Поставщик»"
                         value={form.name}
                         onChange={e => setForm({ ...form, name: e.target.value })}
+                        required
                     />
-                    <input
-                        placeholder="ИНН"
+                    <Input
+                        label="ИНН"
+                        placeholder="1234567890"
                         value={form.inn}
                         onChange={e => setForm({ ...form, inn: e.target.value })}
                     />
-                    <label>
+
+                    <label className="checkbox-wrapper">
                         <input
                             type="checkbox"
                             checked={form.isActive}
                             onChange={e => setForm({ ...form, isActive: e.target.checked })}
                         />
-                        Активен
+                        <span>Активен</span>
                     </label>
-
-                    <div style={{ display: 'flex', gap: 8 }}>
-                        <button onClick={save}>
-                            {editingUuid ? 'Сохранить' : 'Добавить'}
-                        </button>
-                        {editingUuid && <button onClick={cancelEdit}>Отмена</button>}
-                    </div>
                 </div>
-            </section>
-
-            <table border={1} cellPadding={8}>
-                <thead>
-                <tr>
-                    <th>Наименование</th>
-                    <th>ИНН</th>
-                    <th>Активен</th>
-                    <th></th>
-                </tr>
-                </thead>
-                <tbody>
-                {items.map(item => (
-                    <tr key={item.uuid}>
-                        <td>{item.name}</td>
-                        <td>{item.inn}</td>
-                        <td>{item.isActive ? 'Да' : 'Нет'}</td>
-                        <td>
-                            <button onClick={() => startEdit(item)}>Изменить</button>
-                        </td>
-                    </tr>
-                ))}
-                </tbody>
-            </table>
-        </main>
+            </Modal>
+        </div>
     );
 }

@@ -8,15 +8,24 @@ import HomePage from "./pages/HomePage";
 import ComingSoonPage from "./pages/ComingSoonPage";
 import CounterpartiesPage from "./pages/CounterpartiesPage";
 import FilmTypesPage from "./pages/FilmTypesPage";
+import FilmTypeParamsPage from "./pages/FilmTypeParamsPage";
 import DictionaryLayout from "./pages/dictionaries/DictionaryLayout";
 import SuppliersPage from "./pages/SuppliersPage";
 import DefectReasonsPage from "./pages/DefectReasonsPage";
 import FilmBrandAliasesPage from "./pages/FilmBrandAliasesPage";
 import StorageZonesPage from "./pages/StorageZonesPage";
 import WarehouseMapPage from "./pages/WarehouseMapPage";
-import ReceiptImportPage from "./pages/ReceiptImportPage";
 import PalletTypesPage from "./pages/PalletTypesPage";
 import LoginPage from "./pages/LoginPage";
+import AdminLayout from "./pages/admin/AdminLayout";
+import UsersPage from "./pages/admin/UsersPage";
+import RolesPage from "./pages/admin/RolesPage";
+
+import TechnologistLayout from "./pages/technologist/TechnologistLayout";
+import TechnologistImportPage from "./pages/technologist/TechnologistImportPage";
+import CuttingJobsPage from "./pages/technologist/CuttingJobsPage";
+import PrintingJobsPage from "./pages/technologist/PrintingJobsPage";
+import LaminationJobsPage from "./pages/technologist/LaminationJobsPage";
 
 export default function App() {
     return (
@@ -38,15 +47,22 @@ export default function App() {
                                 />
 
                                 <Route path="film-types" element={<FilmTypesPage />} />
+                                <Route path="film-type-params" element={<FilmTypeParamsPage />} />
                                 <Route path="film-brand-aliases" element={<FilmBrandAliasesPage />} />
                                 <Route path="suppliers" element={<SuppliersPage />} />
                                 <Route path="counterparties" element={<CounterpartiesPage />} />
                                 <Route path="defect-reasons" element={<DefectReasonsPage />} />
-
                                 <Route path="storage-zones" element={<StorageZonesPage />} />
                                 <Route path="warehouse-map/:zoneUuid" element={<WarehouseMapPage />} />
-                                <Route path="receipt-import" element={<ReceiptImportPage />} />
                                 <Route path="pallet-types" element={<PalletTypesPage />} />
+                            </Route>
+
+                            <Route path="/technologist" element={<TechnologistLayout />}>
+                                <Route index element={<Navigate to="/technologist/import" replace />} />
+                                <Route path="import" element={<TechnologistImportPage />} />
+                                <Route path="cutting" element={<CuttingJobsPage />} />
+                                <Route path="printing" element={<PrintingJobsPage />} />
+                                <Route path="lamination" element={<LaminationJobsPage />} />
                             </Route>
 
                             <Route
@@ -73,10 +89,17 @@ export default function App() {
                                 path="/logistics"
                                 element={<ComingSoonPage title="Рабочее место логиста" />}
                             />
-                            <Route
-                                path="/admin"
-                                element={<ComingSoonPage title="Администрирование" />}
-                            />
+                            <Route path="/admin" element={<AdminLayout />}>
+                                <Route
+                                    index
+                                    element={
+                                        <Navigate to="/admin/users" replace />
+                                    }
+                                />
+                                <Route path="users" element={<UsersPage />} />
+                                <Route path="roles" element={<RolesPage />} />
+                                <Route path="*" element={<Navigate to="/admin/users" replace />} />
+                            </Route>
                         </Route>
                     </Route>
 

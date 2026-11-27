@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿﻿﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RulonFlow.Domain.Entities;
 using RulonFlow.Infrastructure.Persistence;
@@ -23,6 +24,7 @@ public record StorageZoneFormValues(
 
 [ApiController]
 [Route("api/v1/storage-zones")]
+[Authorize(Policy = "warehouse:manage")]
 public class StorageZonesController : ControllerBase
 {
     private readonly RulonFlowDbContext _db;

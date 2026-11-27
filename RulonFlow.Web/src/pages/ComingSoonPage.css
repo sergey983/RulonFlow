@@ -1,0 +1,27 @@
+.coming-soon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    animation: fadeIn 0.4s ease-out;
+}
+
+.coming-soon__card {
+    text-align: center;
+    padding: 48px;
+    max-width: 480px;
+}
+
+.coming-soon__icon {
+    font-size: 56px;
+    margin-bottom: 20px;
+}
+
+.coming-soon__card h1 {
+    font-size: 22px;
+    margin-bottom: 8px;
+}
+
+.coming-soon__card p {
+    font-size: 15px;
+}

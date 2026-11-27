@@ -1,8 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿﻿﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RulonFlow.Domain.Entities;
 using RulonFlow.Infrastructure.Persistence;
-using System.Security.Cryptography.X509Certificates;
 
 namespace RulonFlow.Api.Controllers;
 
@@ -35,6 +35,7 @@ public record GenerateLocationsRequest(
 
 [ApiController]
 [Route("api/v1")]
+[Authorize(Policy = "warehouse:manage")]
 public class StorageLocationsController : ControllerBase
 {
     private readonly RulonFlowDbContext _db;

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿﻿﻿﻿﻿﻿using Microsoft.EntityFrameworkCore;
 using RulonFlow.Domain.Entities;
 using System.Security.Cryptography.X509Certificates;
 
@@ -26,6 +26,10 @@ public class RulonFlowDbContext : DbContext
     public DbSet<ImportFile> ImportFiles => Set<ImportFile>();
     public DbSet<ImportRow> ImportRows => Set<ImportRow>();
     public DbSet<MaterialReceipt> MaterialReceipts => Set<MaterialReceipt>();
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<UserRole> UserRoles => Set<UserRole>();
+    public DbSet<Permission> Permissions => Set<Permission>();
+    public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -162,7 +166,6 @@ public class RulonFlowDbContext : DbContext
             entity.Property(x => x.Uuid).HasColumnName("uuid").HasMaxLength(36);
             entity.Property(x => x.Login).HasColumnName("login").HasMaxLength(100).IsRequired();
             entity.Property(x => x.FullName).HasColumnName("full_name").HasMaxLength(255).IsRequired();
-            entity.Property(x => x.Role).HasColumnName("role").HasMaxLength(50).IsRequired();
             entity.Property(x => x.PasswordHash).HasColumnName("password_hash").HasMaxLength(255);
             entity.Property(x => x.IsActive).HasColumnName("is_active");
             entity.Property(x => x.CreatedAt).HasColumnName("created_at");
@@ -525,6 +528,72 @@ public class RulonFlowDbContext : DbContext
 
             entity.Property(x => x.CreatedAt)
                 .HasColumnName("created_at");
+        });
+
+        modelBuilder.Entity<Role>(entity =>
+        {
+            entity.ToTable("roles");
+            entity.HasKey(x => x.Uuid);
+
+            entity.Property(x => x.Uuid).HasColumnName("uuid").HasMaxLength(36);
+            entity.Property(x => x.Name).HasColumnName("name").HasMaxLength(50).IsRequired();
+            entity.Property(x => x.Description).HasColumnName("description").HasMaxLength(255);
+            entity.Property(x => x.IsActive).HasColumnName("is_active");
+            entity.Property(x => x.CreatedAt).HasColumnName("created_at");
+            entity.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+
+            entity.HasIndex(x => x.Name).IsUnique();
+        });
+
+        modelBuilder.Entity<UserRole>(entity =>
+        {
+            entity.ToTable("users_roles");
+            entity.HasKey(x => new { x.UserUuid, x.RoleUuid });
+
+            entity.Property(x => x.UserUuid).HasColumnName("user_uuid").HasMaxLength(36);
+            entity.Property(x => x.RoleUuid).HasColumnName("role_uuid").HasMaxLength(36);
+
+            entity.HasOne(x => x.User)
+                .WithMany(x => x.Roles)
+                .HasForeignKey(x => x.UserUuid)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.Role)
+                .WithMany(x => x.Users)
+                .HasForeignKey(x => x.RoleUuid)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Permission>(entity =>
+        {
+            entity.ToTable("permissions");
+            entity.HasKey(x => x.Uuid);
+
+            entity.Property(x => x.Uuid).HasColumnName("uuid").HasMaxLength(36);
+            entity.Property(x => x.Code).HasColumnName("code").HasMaxLength(100).IsRequired();
+            entity.Property(x => x.Name).HasColumnName("name").HasMaxLength(255).IsRequired();
+            entity.Property(x => x.Description).HasColumnName("description").HasMaxLength(500);
+
+            entity.HasIndex(x => x.Code).IsUnique();
+        });
+
+        modelBuilder.Entity<RolePermission>(entity =>
+        {
+            entity.ToTable("role_permissions");
+            entity.HasKey(x => new { x.RoleUuid, x.PermissionUuid });
+
+            entity.Property(x => x.RoleUuid).HasColumnName("role_uuid").HasMaxLength(36);
+            entity.Property(x => x.PermissionUuid).HasColumnName("permission_uuid").HasMaxLength(36);
+
+            entity.HasOne(x => x.Role)
+                .WithMany(x => x.Permissions)
+                .HasForeignKey(x => x.RoleUuid)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.Permission)
+                .WithMany(x => x.RolePermissions)
+                .HasForeignKey(x => x.PermissionUuid)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         base.OnModelCreating(modelBuilder);

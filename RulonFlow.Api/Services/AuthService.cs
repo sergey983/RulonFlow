@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿﻿﻿﻿﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using RulonFlow.Api.DTOs.Auth;
 using RulonFlow.Infrastructure.Persistence;
@@ -22,6 +22,10 @@ public class AuthService
     public async Task<LoginResponseDto> LoginAsync(LoginRequestDto request)
     {
         var user = await _dbContext.Users
+            .Include(x => x.Roles)
+                .ThenInclude(x => x.Role)
+                    .ThenInclude(x => x.Permissions)
+                        .ThenInclude(x => x.Permission)
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Login == request.Login);
 
@@ -49,9 +53,22 @@ public class AuthService
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, user.Uuid.ToString()),
-            new Claim(ClaimTypes.Name, user.Login),
-            new Claim(ClaimTypes.Role, user.Role)
+            new Claim(ClaimTypes.Name, user.Login)
         };
+
+        foreach (var userRole in user.Roles)
+        {
+            if (userRole.Role.IsActive)
+            {
+                claims = claims.Append(new Claim(ClaimTypes.Role, userRole.Role.Name)).ToArray();
+
+                // Добавляем разрешения (permissions) из роли
+                foreach (var rp in userRole.Role.Permissions)
+                {
+                    claims = claims.Append(new Claim("permission", rp.Permission.Code)).ToArray();
+                }
+            }
+        }
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -66,10 +83,19 @@ public class AuthService
         var accessToken = new JwtSecurityTokenHandler().WriteToken(token);
         var refreshToken = Guid.NewGuid().ToString();
 
+        var userRoles = user.Roles
+            .Where(x => x.Role.IsActive)
+            .Select(x => x.Role.Name);
+
+        var userPermissions = user.Roles
+            .Where(x => x.Role.IsActive)
+            .SelectMany(x => x.Role.Permissions)
+            .Select(x => x.Permission.Code);
+
         return new LoginResponseDto(
             accessToken,
             refreshToken,
             DateTime.UtcNow.AddHours(lifetimeHours),
-            new UserDto(user.Uuid, user.Login, user.FullName, user.Role));
+            new UserDto(user.Uuid, user.Login, user.FullName, userRoles, userPermissions));
     }
 }
